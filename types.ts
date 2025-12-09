@@ -9,6 +9,17 @@ export interface User {
   isVerified?: boolean;
   agencyName?: string;
   phone?: string;
+  bio?: string;
+  licenseNumber?: string;
+  experience?: number;
+  specialties?: string[];
+  location?: string;
+  socials?: {
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+  savedPropertyIds?: string[]; // Array of property IDs that the user has liked/saved
 }
 
 export interface Agent {
@@ -20,6 +31,7 @@ export interface Agent {
   avatar: string;
   agencyName: string;
   rating: number;
+  ratingCount?: number;
   licenseNumber?: string;
   bio?: string;
   experience?: number; // Years of experience
@@ -28,6 +40,9 @@ export interface Agent {
     twitter?: string;
     instagram?: string;
   };
+  location?: string;
+  savedPropertyIds?: string[];
+  userId?: string | { _id: string, [key: string]: any }; // Allow access to raw user ID/Object
 }
 
 export interface Property {
@@ -38,7 +53,7 @@ export interface Property {
   state: string;
   price: number;
   type: 'House' | 'Apartment' | 'Condo' | 'Land' | 'Villa' | 'Commercial';
-  listingType: 'Sale' | 'Rent';
+  listingType: 'Sale' | 'Rent' | 'Land';
   bedrooms: number;
   bathrooms: number;
   sqft: number;
@@ -48,17 +63,19 @@ export interface Property {
   agent: Agent;
   features: string[];
   isFeatured?: boolean;
-  status: 'Available' | 'Pending' | 'Sold';
+  status: 'Available' | 'Pending' | 'Sold' | 'Rented';
   description: string;
   addedAt: string;
   latitude?: number;
   longitude?: number;
+  priceFrequency?: 'Year' | 'Month' | 'Night';
+  plots?: number;
 }
 
 export interface PropertyFilters {
   search: string;
   type: string;
-  listingType: 'Sale' | 'Rent' | 'All';
+  listingType: 'Sale' | 'Rent' | 'Land' | 'All';
   minPrice: number;
   maxPrice: number;
   bedrooms: string;

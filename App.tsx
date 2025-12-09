@@ -5,13 +5,17 @@ import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
 import { PropertiesPage } from './pages/PropertiesPage';
 import { PropertyDetailsPage } from './pages/PropertyDetailsPage';
-import { AgentsPage } from './pages/AgentsPage';
+
 import { AgentProfilePage } from './pages/AgentProfilePage';
+import { UserDashboardPage } from './pages/UserDashboardPage';
 import { AdvertisePage } from './pages/AdvertisePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { TermsPage } from './pages/TermsPage';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ScrollToTop } from './components/ScrollToTop';
 
 // Simple placeholder for pages not fully implemented to ensure router validity
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -29,18 +33,22 @@ const App: React.FC = () => {
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/properties" element={<PropertiesPage />} />
               <Route path="/properties/:id" element={<PropertyDetailsPage />} />
-              <Route path="/agents" element={<AgentsPage />} />
+
               <Route path="/agents/:id" element={<AgentProfilePage />} />
+              <Route path="/dashboard" element={<UserDashboardPage />} />
               <Route path="/advertise" element={<AdvertisePage />} />
-              <Route path="/about" element={<PlaceholderPage title="About PropertyHub" />} />
-              <Route path="/saved" element={<PlaceholderPage title="Saved Properties" />} />
+              <Route path="/about" element={<PlaceholderPage title="About Dwelgo.ng" />} />
+              <Route path="/saved" element={<UserDashboardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>

@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { MOCK_AGENTS } from '../constants';
+import { AuthService } from '../services/AuthService';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (data: Partial<User> & { password: string }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,90 +20,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for existing session
-    const storedUser = localStorage.getItem('propertyhub_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Initialize auth state
+    const initAuth = async () => {
+      try {
+        const currentUser = await AuthService.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Auth init failed", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    // Simulate API call
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        // MOCK LOGIC: Check if the email matches one of our mock agents
-        // This allows us to "login as agent" and see their specific profile
-        const matchedAgent = MOCK_AGENTS.find(a => a.email.toLowerCase() === email.toLowerCase());
-
-        let mockUser: User;
-
-        if (matchedAgent) {
-           mockUser = {
-             id: matchedAgent.id, // Use the correct Agent ID
-             firstName: matchedAgent.firstName,
-             lastName: matchedAgent.lastName,
-             email: matchedAgent.email,
-             role: 'agent',
-             avatar: matchedAgent.avatar,
-             isVerified: true,
-             agencyName: matchedAgent.agencyName
-           };
-        } else {
-           // Default fallback for generic users
-           mockUser = {
-             id: 'u1',
-             firstName: 'Demo',
-             lastName: 'User',
-             email: email,
-             role: email.includes('agent') ? 'agent' : 'user',
-             avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-             isVerified: true,
-             agencyName: email.includes('agent') ? 'Demo Agency' : undefined
-           };
-        }
-        
-        setUser(mockUser);
-        localStorage.setItem('propertyhub_user', JSON.stringify(mockUser));
-        setIsLoading(false);
-        resolve();
-      }, 1000);
-    });
+    try {
+      const user = await AuthService.login(email, password);
+      setUser(user);
+      return user;
+    } catch (error: any) {
+      console.error("Login failed", error);
+      setIsLoading(false); // Ensure loading stops
+      throw error; // Re-throw to be handled by the form
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (data: Partial<User> & { password: string }) => {
     setIsLoading(true);
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const newUser: User = {
-          id: Math.random().toString(36).substr(2, 9),
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          email: data.email || '',
-          role: data.role || 'user',
-          avatar: `https://ui-avatars.com/api/?name=${data.firstName}+${data.lastName}&background=10b981&color=fff`,
-          isVerified: data.role === 'agent' ? false : true, // Agents need verification
-          agencyName: data.agencyName,
-          phone: data.phone
-        };
-
-        setUser(newUser);
-        localStorage.setItem('propertyhub_user', JSON.stringify(newUser));
-        setIsLoading(false);
-        resolve();
-      }, 1500);
-    });
+    try {
+      const user = await AuthService.register(data);
+      setUser(user);
+    } catch (error: any) {
+      console.error("Registration failed", error);
+      setIsLoading(false);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('propertyhub_user');
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await AuthService.logout();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    // We don't change global loading state here usually, but let the calling component handle UI
+    return AuthService.resetPassword(email);
+  };
+
+  const updateProfile = async (data: Partial<User>) => {
+    if (!user) throw new Error("No user logged in");
+    setIsLoading(true);
+    try {
+      const updatedUser = await AuthService.updateProfile(user.id, data);
+      setUser(updatedUser);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, resetPassword, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
