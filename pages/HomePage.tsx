@@ -186,7 +186,7 @@ export const HomePage: React.FC = () => {
 
       {/* 2. STATS / FEATURES BAR */}
       <div className="bg-zillow-50 dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="flex flex-col items-center">
               <h3 className="text-3xl font-bold text-zillow-600 mb-1">2,500+</h3>
@@ -209,7 +209,7 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* 3. MAIN CONTENT */}
-      <div className="container mx-auto px-6 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
 
         {/* INTRO */}
         <div className="text-center max-w-3xl mx-auto mb-16">
@@ -336,7 +336,7 @@ export const HomePage: React.FC = () => {
 
       {/* 4. ADVERTISE SECTION (Moved Here, Styled as Full Width) */}
       <div className="bg-gradient-to-r from-indigo-900 to-zillow-900 text-white py-20">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="md:w-1/2">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-bold mb-6">
               <Megaphone size={16} /> Advertise with Dwelgo.ng

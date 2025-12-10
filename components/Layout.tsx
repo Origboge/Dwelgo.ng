@@ -61,7 +61,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         ? 'bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md border-gray-200 dark:border-gray-800 py-3 shadow-sm'
         : 'bg-transparent border-transparent py-5'
         }`}>
-        <div className="container mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group shrink-0">
             <div className={`flex items-center justify-center ${isScrolled || !isHomePage ? 'text-zillow-600 dark:text-zillow-400' : 'text-white'}`}>
@@ -260,7 +260,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </main>
 
       <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-200 dark:border-gray-800 pt-16 pb-8">
-        <div className="container mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-1">
               <Link to="/" className="flex items-center gap-2 mb-4">

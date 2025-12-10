@@ -93,7 +93,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
 
             {/* NEW IMAGE LAYOUT: Main Image Top (Carousel), Thumbnails Below */}
-            <div className="container mx-auto px-6 pt-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 {/* Main Large Image Carousel */}
                 <div className="w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-sm mb-4 relative group bg-gray-100 dark:bg-slate-800">
                     <img
@@ -146,7 +146,7 @@ export const PropertyDetailsPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="container mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-12">
 
                     {/* Main Content */}
@@ -177,7 +177,8 @@ export const PropertyDetailsPage: React.FC = () => {
                                         )}
                                         <span className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-wide font-bold">{property.type}</span>
                                     </div>
-                                    <p className="text-slate-600 dark:text-slate-400 text-lg mb-4">
+                                    <p className="text-slate-700 dark:text-slate-300 text-xl font-medium mb-4 flex items-center gap-2">
+                                        <MapPin size={18} className="text-slate-400" />
                                         {property.address}, {property.city}, {property.state}
                                     </p>
 
@@ -224,7 +225,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
                     {/* Video Section - Moved Here */}
                     {property.videoUrls && property.videoUrls.length > 0 && (
-                        <div className="mb-10 p-1 bg-black rounded-xl overflow-hidden shadow-lg">
+                        <div className="mb-8 p-1 bg-black rounded-xl overflow-hidden shadow-lg">
                             <div className="aspect-video w-full relative group">
                                 <video
                                     src={property.videoUrls[0]}
@@ -237,7 +238,7 @@ export const PropertyDetailsPage: React.FC = () => {
                     )}
 
                     {/* Description */}
-                    <div className="mb-10">
+                    <div className="mb-8">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Overview</h3>
                         <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                             {property.description}
@@ -245,7 +246,7 @@ export const PropertyDetailsPage: React.FC = () => {
                     </div>
 
                     {/* Features */}
-                    <div className="mb-10">
+                    <div className="mb-8">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Features</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-gray-50 dark:bg-slate-900 p-6 rounded-lg">
                             {property.features.map((feature, idx) => (

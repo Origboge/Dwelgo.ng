@@ -391,19 +391,28 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         <div className="min-h-screen text-slate-900 bg-gray-50 dark:bg-[#0a0a0a]">
 
 
-            {/* Header Image */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 pt-28 pb-10">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                        <div className="relative group">
+            {/* Header / Cover Image Section */}
+            <div className="relative">
+                {/* Cover Image */}
+                <div className="h-48 md:h-64 w-full bg-gradient-to-r from-slate-800 to-slate-900 overflow-hidden">
+                    <div className="h-48 md:h-64 w-full bg-cover bg-center" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1449844908441-8829872d2607?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&q=80')` }}>
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+                    </div>
+                </div>
+
+                {/* Profile Card Container - Overlapping Cover */}
+                <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative -mt-20 mb-12">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+                        {/* Avatar */}
+                        <div className="relative group shrink-0">
                             {agent.avatar ? (
                                 <img
                                     src={agent.avatar}
                                     alt={agent.firstName}
-                                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl bg-gray-200"
+                                    className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md bg-gray-200"
                                 />
                             ) : (
-                                <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-zillow-600 text-white flex items-center justify-center text-3xl font-bold tracking-wider">
+                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-slate-800 shadow-md bg-zillow-600 text-white flex items-center justify-center text-4xl font-bold tracking-wider">
                                     {getInitials(agent.firstName, agent.lastName)}
                                 </div>
                             )}
@@ -419,15 +428,36 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     />
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+                                        className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white z-10"
                                     >
                                         <Camera size={24} />
                                     </button>
                                 </>
                             )}
-                            <div className="absolute -bottom-2 -right-2 bg-white text-slate-900 font-bold px-2 py-1 rounded-full text-xs shadow border border-gray-200 flex items-center gap-1">
-                                <Star size={10} className="fill-yellow-500 text-yellow-500" /> {agent.rating} ({agent.ratingCount || 12} reviews)
+                            <div className="absolute bottom-2 right-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold px-2 py-1 rounded-full text-xs shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-1 z-20">
+                                <Star size={12} className="fill-yellow-500 text-yellow-500" /> {agent.rating}
                             </div>
+                        </div>
+
+                        {isOwner && (
+                            <>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleAvatarChange}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+                                >
+                                    <Camera size={24} />
+                                </button>
+                            </>
+                        )}
+                        <div className="absolute -bottom-2 -right-2 bg-white text-slate-900 font-bold px-2 py-1 rounded-full text-xs shadow border border-gray-200 flex items-center gap-1">
+                            <Star size={10} className="fill-yellow-500 text-yellow-500" /> {agent.rating} ({agent.ratingCount || 12} reviews)
                         </div>
 
                         <div className="flex-1">
@@ -493,78 +523,84 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 </div>
             </div>
 
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all scale-100 border border-gray-100 dark:border-gray-800">
-                        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <CheckSquare className="text-green-600 dark:text-green-400" size={40} />
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Listing Published!</h2>
-                        <p className="text-slate-600 dark:text-slate-400 mb-8">
-                            Your property has been successfully uploaded and is now live on Dwelgo.ng.
-                        </p>
-                        <div className="space-y-3">
-                            <Button variant="primary" className="w-full py-3 shadow-lg shadow-blue-200 dark:shadow-none" onClick={() => setShowSuccessModal(false)}>
-                                Continue to Dashboard
-                            </Button>
-                            <Button variant="outline" className="w-full py-3" onClick={() => { setShowSuccessModal(false); navigate('/'); }}>
-                                View Live Listing
-                            </Button>
+            {
+                showSuccessModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all scale-100 border border-gray-100 dark:border-gray-800">
+                            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <CheckSquare className="text-green-600 dark:text-green-400" size={40} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Listing Published!</h2>
+                            <p className="text-slate-600 dark:text-slate-400 mb-8">
+                                Your property has been successfully uploaded and is now live on Dwelgo.ng.
+                            </p>
+                            <div className="space-y-3">
+                                <Button variant="primary" className="w-full py-3 shadow-lg shadow-blue-200 dark:shadow-none" onClick={() => setShowSuccessModal(false)}>
+                                    Continue to Dashboard
+                                </Button>
+                                <Button variant="outline" className="w-full py-3" onClick={() => { setShowSuccessModal(false); navigate('/'); }}>
+                                    View Live Listing
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Toast Notification */}
-            {toast.visible && (
-                <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-lg shadow-xl animate-slide-down ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                    {toast.type === 'success' ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
-                    <span className="font-bold">{toast.message}</span>
-                </div>
-            )}
+            {
+                toast.visible && (
+                    <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-lg shadow-xl animate-slide-down ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                        {toast.type === 'success' ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+                        <span className="font-bold">{toast.message}</span>
+                    </div>
+                )
+            }
 
             {/* Delete Confirmation Modal */}
-            {deleteModal.visible && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-gray-100 dark:border-gray-800 transform scale-100 transition-all">
-                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <AlertTriangle className="text-red-600 dark:text-red-500" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Listing?</h3>
-                        <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm">
-                            Are you sure you want to delete this property? This action cannot be undone.
-                        </p>
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                className="flex-1 py-2.5 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                                onClick={() => setDeleteModal({ visible: false, propertyId: null })}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="primary"
-                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 border-none text-white shadow-lg shadow-red-200 dark:shadow-none"
-                                onClick={async () => {
-                                    if (deleteModal.propertyId) {
-                                        try {
-                                            await propertyService.deleteProperty(deleteModal.propertyId);
-                                            setRefreshTrigger(prev => prev + 1);
-                                            showToast('Property deleted successfully', 'success');
-                                            setDeleteModal({ visible: false, propertyId: null });
-                                        } catch (err) {
-                                            console.error(err);
-                                            showToast('Failed to delete property', 'error');
+            {
+                deleteModal.visible && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-gray-100 dark:border-gray-800 transform scale-100 transition-all">
+                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <AlertTriangle className="text-red-600 dark:text-red-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Listing?</h3>
+                            <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm">
+                                Are you sure you want to delete this property? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 py-2.5 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                    onClick={() => setDeleteModal({ visible: false, propertyId: null })}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 border-none text-white shadow-lg shadow-red-200 dark:shadow-none"
+                                    onClick={async () => {
+                                        if (deleteModal.propertyId) {
+                                            try {
+                                                await propertyService.deleteProperty(deleteModal.propertyId);
+                                                setRefreshTrigger(prev => prev + 1);
+                                                showToast('Property deleted successfully', 'success');
+                                                setDeleteModal({ visible: false, propertyId: null });
+                                            } catch (err) {
+                                                console.error(err);
+                                                showToast('Failed to delete property', 'error');
+                                            }
                                         }
-                                    }
-                                }}
-                            >
-                                Delete
-                            </Button>
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <div className="container mx-auto px-6 py-12">
                 <div className="flex flex-col lg:flex-row gap-12">
@@ -576,7 +612,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                             </h3>
                             <div className="space-y-6">
                                 <div>
-                                    <p className="text-xs uppercase font-bold text-slate-500 mb-2 tracking-wider">About</p>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <Users size={14} /> About
+                                    </p>
                                     {isEditingProfile ? (
                                         <textarea
                                             value={profileForm.bio}
@@ -591,7 +629,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-xs uppercase font-bold text-slate-500 mb-2 tracking-wider">Specialties</p>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <Award size={14} /> Specialties
+                                    </p>
                                     {isEditingProfile ? (
                                         <input
                                             value={profileForm.specialties}
@@ -609,7 +649,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-xs uppercase font-bold text-slate-500 mb-2 tracking-wider">License</p>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <ShieldCheck size={14} /> License
+                                    </p>
                                     {isEditingProfile ? (
                                         <input
                                             value={profileForm.licenseNumber}
@@ -678,25 +720,25 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     <div className="lg:w-2/3">
                         {isOwner && (
                             <div className="mb-10 animate-fade-in">
-                                <div className="bg-gradient-to-r from-zillow-600 to-blue-700 text-white rounded-xl p-8 shadow-lg mb-8 relative overflow-hidden">
+                                <div className="bg-gradient-to-br from-blue-600 to-indigo-900 text-white rounded-xl p-10 shadow-2xl mb-8 relative overflow-hidden ring-1 ring-white/10">
                                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                                         <div>
-                                            <h3 className="text-3xl font-bold mb-2">Realtor Dashboard</h3>
-                                            <p className="text-blue-100 text-base opacity-90">Manage your portfolio and track performance.</p>
+                                            <h3 className="text-4xl font-bold mb-3 tracking-tight">Realtor Dashboard</h3>
+                                            <p className="text-blue-100 text-lg opacity-90 max-w-md">Manage your listings, track your performance, and grow your real estate business.</p>
                                         </div>
                                         <Button
                                             variant="secondary"
-                                            className="bg-white text-zillow-600 hover:bg-blue-50 border-none shadow-lg font-bold px-6 py-3"
+                                            className="bg-white text-indigo-900 hover:bg-blue-50 border-none shadow-xl font-bold px-8 py-4 text-base transition-transform hover:scale-105 active:scale-95"
                                             onClick={() => setShowAddForm(!showAddForm)}
                                         >
                                             {showAddForm ? (
-                                                <><X size={18} className="mr-2" /> Cancel</>
+                                                <><X size={20} className="mr-2" /> Cancel</>
                                             ) : (
-                                                <><Plus size={18} className="mr-2" /> Post New Property</>
+                                                <><Plus size={20} className="mr-2" /> Post New Property</>
                                             )}
                                         </Button>
                                     </div>
-                                    <Building2 size={180} className="absolute -right-8 -bottom-8 text-white/10 rotate-12" />
+                                    <Building2 size={240} className="absolute -right-12 -bottom-16 text-white/5 rotate-12" />
                                 </div>
 
                                 {/* Tabs */}
@@ -1022,6 +1064,6 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
