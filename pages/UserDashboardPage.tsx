@@ -65,10 +65,15 @@ export const UserDashboardPage: React.FC = () => {
                 return;
             }
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const result = reader.result as string;
-                updateProfile({ avatar: result });
-                showToast("Profile picture updated!", 'success');
+                try {
+                    await updateProfile({ avatar: result });
+                    showToast("Profile picture updated!", 'success');
+                } catch (error) {
+                    console.error("Failed to update profile", error);
+                    showToast("Failed to save profile picture. Please try again.", 'error');
+                }
             };
             reader.readAsDataURL(file);
         }
