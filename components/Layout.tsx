@@ -225,6 +225,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                 )}
 
+                {user?.role === 'admin' && (
+                  <Link
+                    to="/admin/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-lg font-medium text-indigo-600 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2"
+                  >
+                    <ShieldCheck size={16} /> Admin Panel
+                  </Link>
+                )}
+
                 <Link
                   to={user?.role === 'agent' ? `/agents/${user.id}?tab=likes` : '/saved'}
                   onClick={() => setMobileMenuOpen(false)}
