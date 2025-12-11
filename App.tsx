@@ -13,6 +13,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { TermsPage } from './pages/TermsPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -45,6 +47,13 @@ const App: React.FC = () => {
               <Route path="/advertise" element={<AdvertisePage />} />
               <Route path="/about" element={<PlaceholderPage title="About Dwelgo.ng" />} />
               <Route path="/saved" element={<UserDashboardPage />} />
+              <Route path="/saved" element={<UserDashboardPage />} />
+
+              {/* Admin Routes */}
+              <Route element={<ProtectedAdminRoute />}>
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              </Route>
+
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/terms" element={<TermsPage />} />

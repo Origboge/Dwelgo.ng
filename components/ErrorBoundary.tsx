@@ -1,16 +1,16 @@
-import * as React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 interface State {
     hasError: boolean;
     error: Error | null;
-    errorInfo: React.ErrorInfo | null;
+    errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
+export class ErrorBoundary extends Component<Props, State> {
     readonly state: State = {
         hasError: false,
         error: null,
@@ -21,12 +21,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
         console.error("Uncaught error:", error, errorInfo);
+        // @ts-ignore
         this.setState({ errorInfo });
     }
 
-    render(): React.ReactNode {
+    render(): ReactNode {
         if (this.state.hasError) {
             return (
                 <div className="min-h-screen flex items-center justify-center bg-gray-100 p-8">
@@ -60,6 +61,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             );
         }
 
+        // @ts-ignore
         return this.props.children;
     }
 }

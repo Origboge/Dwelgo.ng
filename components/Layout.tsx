@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
@@ -121,6 +120,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <Link to="/dashboard">
                     <Button variant="ghost" size="sm" className={isScrolled || !isHomePage ? '' : 'text-white hover:text-white hover:bg-white/20'}>
                       <LayoutDashboard size={16} className="mr-1" /> Dashboard
+                    </Button>
+                  </Link>
+                )}
+
+                {/* Dashboard Link for Admins */}
+                {user.role === 'admin' && (
+                  <Link to="/admin/dashboard">
+                    <Button variant="ghost" size="sm" className={`text-indigo-600 font-bold ${isScrolled || !isHomePage ? '' : 'bg-white/90'}`}>
+                      <ShieldCheck size={16} className="mr-1" /> Admin Panel
                     </Button>
                   </Link>
                 )}

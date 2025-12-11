@@ -64,6 +64,17 @@ class PropertyService {
         }
     }
 
+    async getAllPropertiesAdmin(): Promise<Property[]> {
+        try {
+            const response = await api.get('/properties/admin/all?limit=100');
+            const rawData = response.data.data || [];
+            return rawData.map((p: any) => this.mapBackendProperty(p));
+        } catch (error) {
+            console.error('Failed to fetch admin properties', error);
+            return [];
+        }
+    }
+
     async getPropertyById(id: string): Promise<Property | undefined> {
         try {
             const response = await api.get(`/properties/${id}`);
@@ -89,6 +100,11 @@ class PropertyService {
             console.error('Failed to fetch agent properties', error);
             return [];
         }
+    }
+
+    async toggleFeaturedProperty(id: string, isFeatured: boolean): Promise<Property> {
+        const response = await api.patch(`/properties/${id}/featured`, { isFeatured });
+        return this.mapBackendProperty(response.data.data);
     }
 
     // Adapter to transform Frontend Property Interface to Backend Schema
