@@ -95,22 +95,45 @@ export const PropertyDetailsPage: React.FC = () => {
             {/* NEW IMAGE LAYOUT: Main Image Top (Carousel), Thumbnails Below */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 {/* Main Large Image Carousel */}
-                <div className="w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-sm mb-4 relative group bg-gray-100 dark:bg-slate-800">
+                <div
+                    className="w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-sm mb-4 relative group bg-gray-100 dark:bg-slate-800"
+                    onTouchStart={(e) => {
+                        const touch = e.touches[0];
+                        e.currentTarget.dataset.touchStartX = touch.clientX.toString();
+                    }}
+                    onTouchEnd={(e) => {
+                        const touchStartX = parseFloat(e.currentTarget.dataset.touchStartX || '0');
+                        const touchEndX = e.changedTouches[0].clientX;
+                        const diff = touchStartX - touchEndX;
+                        const threshold = 50; // min distance for swipe
+
+                        if (Math.abs(diff) > threshold) {
+                            const totalImages = (property.gallery?.length || 0) + 1;
+                            if (diff > 0) {
+                                // Swipe Left -> Next
+                                setCurrentImageIndex((prev) => (prev === totalImages - 1 ? 0 : prev + 1));
+                            } else {
+                                // Swipe Right -> Prev
+                                setCurrentImageIndex((prev) => (prev === 0 ? totalImages - 1 : prev - 1));
+                            }
+                        }
+                    }}
+                >
                     <img
                         src={[property.imageUrl, ...(property.gallery || [])][currentImageIndex]}
                         className="w-full h-full object-cover transition-all duration-500"
                         alt="Property View"
                     />
 
-                    {/* Carousel Controls */}
-                    <div className="absolute inset-0 flex items-center justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Carousel Controls - Always visible on mobile, hover on desktop */}
+                    <div className="absolute inset-0 flex items-center justify-between p-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity pointer-events-none">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 const totalImages = (property.gallery?.length || 0) + 1;
                                 setCurrentImageIndex((prev) => (prev === 0 ? totalImages - 1 : prev - 1));
                             }}
-                            className="bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 backdrop-blur-sm"
+                            className="bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 backdrop-blur-sm pointer-events-auto"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -120,7 +143,7 @@ export const PropertyDetailsPage: React.FC = () => {
                                 const totalImages = (property.gallery?.length || 0) + 1;
                                 setCurrentImageIndex((prev) => (prev === totalImages - 1 ? 0 : prev + 1));
                             }}
-                            className="bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 backdrop-blur-sm"
+                            className="bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 backdrop-blur-sm pointer-events-auto"
                         >
                             <ChevronRight size={24} />
                         </button>
