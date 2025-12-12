@@ -55,7 +55,7 @@ class PropertyService {
     // Fetch all properties with optional filters
     async getAllProperties(filters?: any): Promise<Property[]> {
         try {
-            const response = await api.get('/properties', { params: filters });
+            const response = await api.get('/properties', { params: { ...filters, limit: 1000 } });
             const rawData = response.data.data || [];
             return rawData.map((p: any) => this.mapBackendProperty(p));
         } catch (error) {
