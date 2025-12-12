@@ -10,22 +10,34 @@ export const AdminDashboardPage: React.FC = () => {
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState<'all' | 'featured'>('all');
+
+    // Server-side pagination state
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+
+    const [filter, setFilter] = useState<'all' | 'featured'>('all'); // This is now mostly just visual unless we add backend filter
 
     useEffect(() => {
-        fetchProperties();
-    }, []);
+        const timeoutId = setTimeout(() => {
+            fetchProperties();
+        }, 500); // 500ms debounce
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, page]);
 
     const fetchProperties = async () => {
         setLoading(true);
         try {
-            // Fetch ALL properties (admin view essentially)
-            // Ideally backend should have an admin-specific endpoint to see even unapproved ones.
-            // For now reusing public endpoint but with high limit.
-            // Fetch ALL properties (admin view essentially)
-            // Using new Admin Endpoint
-            const response = await propertyService.getAllPropertiesAdmin();
-            setProperties(response);
+            const response = await propertyService.getAllPropertiesAdmin({
+                search: searchTerm,
+                page: page,
+                limit: 10
+            });
+
+            setProperties(response.properties);
+            setTotalPages(response.pages);
+            setTotalItems(response.total);
+
         } catch (error) {
             console.error(error);
         } finally {
@@ -43,20 +55,11 @@ export const AdminDashboardPage: React.FC = () => {
                 p.id === property.id ? { ...p, isFeatured: newStatus } : p
             ));
 
-            // alert(`Property ${newStatus ? 'Featured' : 'Unfeatured'}`); 
-            // Better to use toast if available, otherwise just silent update
         } catch (error) {
             console.error("Failed to toggle feature", error);
             alert("Failed to update property");
         }
     };
-
-    const filteredProperties = properties.filter(p => {
-        const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.address.city.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filter === 'all' ? true : p.isFeatured;
-        return matchesSearch && matchesFilter;
-    });
 
     return (
         <div className="min-h-screen bg-slate-50 pt-24 pb-12">
@@ -73,7 +76,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="bg-white p-2 rounded-lg shadow-sm border border-gray-200">
-                            <span className="text-sm font-semibold text-slate-700">Total: {properties.length}</span>
+                            <span className="text-sm font-semibold text-slate-700">Total Found: {totalItems}</span>
                         </div>
                     </div>
                 </div>
@@ -84,22 +87,35 @@ export const AdminDashboardPage: React.FC = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Search properties..."
+                            placeholder="Search by title or city..."
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setPage(1); // Reset to page 1 on search
+                            }}
                         />
                     </div>
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        <Filter size={20} className="text-slate-500" />
-                        <select
-                            className="bg-slate-50 border border-gray-300 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value as any)}
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page === 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
                         >
-                            <option value="all">All Properties</option>
-                            <option value="featured">Featured Only</option>
-                        </select>
+                            Prev
+                        </Button>
+                        <span className="text-sm text-slate-600">Page {page} of {totalPages || 1}</span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page >= totalPages}
+                            onClick={() => setPage(p => p + 1)}
+                        >
+                            Next
+                        </Button>
                     </div>
                 </div>
 
@@ -120,11 +136,11 @@ export const AdminDashboardPage: React.FC = () => {
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
                                     <tr><td colSpan={6} className="p-8 text-center text-slate-500">Loading...</td></tr>
-                                ) : filteredProperties.length === 0 ? (
+                                ) : properties.length === 0 ? (
                                     <tr><td colSpan={6} className="p-8 text-center text-slate-500">No properties found.</td></tr>
                                 ) : (
-                                    filteredProperties.map(property => (
-                                        <tr key={property._id} className="hover:bg-slate-50 transition-colors">
+                                    properties.map(property => (
+                                        <tr key={property.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="p-4 max-w-xs">
                                                 <div className="flex items-center gap-3">
                                                     <img

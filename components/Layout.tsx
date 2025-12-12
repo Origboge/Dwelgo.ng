@@ -49,6 +49,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   const navLinks = [
+    { name: 'Buy', path: '/properties' },
     { name: 'Advertise', path: '/advertise' },
   ];
 
@@ -166,10 +167,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {/* Mobile Menu Toggle */}
           <div className="flex items-center gap-4 lg:hidden">
             <button
-              className={`p-2 transition-colors ${isScrolled ? 'text-slate-900 dark:text-white' : 'text-white'}`}
+              className={`p-2 transition-colors ${isScrolled || !isHomePage ? 'text-zillow-600 dark:text-zillow-400' : 'text-white'}`}
               onClick={() => setMobileMenuOpen(true)}
             >
-              <Menu size={24} />
+              <Menu size={28} strokeWidth={2.5} />
             </button>
           </div>
         </div>

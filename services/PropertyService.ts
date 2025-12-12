@@ -64,14 +64,26 @@ class PropertyService {
         }
     }
 
-    async getAllPropertiesAdmin(): Promise<Property[]> {
+    async getAllPropertiesAdmin(params: { search?: string, page?: number, limit?: number } = {}): Promise<{ properties: Property[], total: number, pages: number }> {
         try {
-            const response = await api.get('/properties/admin/all?limit=100');
+            const { search, page = 1, limit = 50 } = params;
+            const queryParams = new URLSearchParams();
+            if (search) queryParams.append('search', search);
+            queryParams.append('page', page.toString());
+            queryParams.append('limit', limit.toString());
+
+            const response = await api.get(`/properties/admin/all?${queryParams.toString()}`);
             const rawData = response.data.data || [];
-            return rawData.map((p: any) => this.mapBackendProperty(p));
+            const properties = rawData.map((p: any) => this.mapBackendProperty(p));
+
+            return {
+                properties,
+                total: response.data.pagination?.total || 0,
+                pages: response.data.pagination?.pages || 0
+            };
         } catch (error) {
             console.error('Failed to fetch admin properties', error);
-            return [];
+            return { properties: [], total: 0, pages: 0 };
         }
     }
 
