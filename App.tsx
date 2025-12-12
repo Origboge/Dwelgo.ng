@@ -12,6 +12,7 @@ import { AdvertisePage } from './pages/AdvertisePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
@@ -58,6 +59,7 @@ const App: React.FC = () => {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
