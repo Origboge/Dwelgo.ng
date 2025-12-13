@@ -13,6 +13,8 @@ export const PropertiesPage: React.FC = () => {
   const [listingType, setListingType] = useState<'All' | 'Sale' | 'Rent' | 'Land'>('All');
   const [priceRange, setPriceRange] = useState<number>(2000000000);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Data State
   const [properties, setProperties] = useState([]);
@@ -78,18 +80,73 @@ export const PropertiesPage: React.FC = () => {
 
             <div className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
               {/* Search */}
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Location</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSearchTerm(val);
+                      // Suggestion Logic
+                      if (val.length > 1) {
+                        const lower = val.toLowerCase();
+                        const matches = new Set<string>();
+                        properties.forEach((p: any) => {
+                          const city = p.city || '';
+                          const state = p.state || '';
+                          const fullAddress = p.address || '';
+                          const segments = fullAddress.split(',').map((s: string) => s.trim());
+
+                          if (city && city.toLowerCase().includes(lower)) matches.add(city);
+                          if (state && state.toLowerCase().includes(lower)) matches.add(state);
+
+                          segments.forEach((seg: string) => {
+                            if (seg.toLowerCase().includes(lower) && seg.length < 50) {
+                              if (seg.toLowerCase() !== city.toLowerCase() && seg.toLowerCase() !== state.toLowerCase()) {
+                                matches.add(seg);
+                              }
+                            }
+                          });
+                        });
+                        // @ts-ignore
+                        setSuggestions(Array.from(matches).slice(0, 5));
+                        // @ts-ignore
+                        setShowSuggestions(true);
+                      } else {
+                        // @ts-ignore
+                        setShowSuggestions(false);
+                      }
+                    }}
                     placeholder="City, Neighborhood, ZIP"
                     className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:border-zillow-600 focus:ring-1 focus:ring-zillow-600 outline-none transition-all"
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    onFocus={() => searchTerm.length > 1 && setShowSuggestions(true)}
                   />
                   <Search className="absolute left-3 top-3 text-gray-400" size={18} />
                 </div>
+                {/* Suggestions Dropdown */}
+                {/* @ts-ignore */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 rounded-md shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+                    {/* @ts-ignore */}
+                    {suggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 transition-colors"
+                        onClick={() => {
+                          setSearchTerm(suggestion);
+                          // @ts-ignore
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <Search size={14} className="text-gray-400" />
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Listing Type */}

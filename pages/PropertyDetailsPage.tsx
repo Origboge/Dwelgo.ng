@@ -244,40 +244,39 @@ export const PropertyDetailsPage: React.FC = () => {
                                 {property.status !== 'Active' && property.status !== 'Available' && ` - ${property.status}`}
                             </span>
                         </div>
-                    </div>
-
-                    {/* Video Section - Moved Here */}
-                    {property.videoUrls && property.videoUrls.length > 0 && (
-                        <div className="mb-8 p-1 bg-black rounded-xl overflow-hidden shadow-lg">
-                            <div className="aspect-video w-full relative group">
-                                <video
-                                    src={property.videoUrls[0]}
-                                    controls
-                                    className="w-full h-full object-contain"
-                                    poster={property.imageUrl}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Description */}
-                    <div className="mb-8">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Overview</h3>
-                        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                            {property.description}
-                        </p>
-                    </div>
-
-                    {/* Features */}
-                    <div className="mb-8">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Features</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-gray-50 dark:bg-slate-900 p-6 rounded-lg">
-                            {property.features.map((feature, idx) => (
-                                <div key={idx} className="flex items-start gap-3 text-slate-700 dark:text-slate-300 text-sm">
-                                    <CheckCircle2 size={18} className="text-zillow-600 shrink-0 mt-0.5" />
-                                    <span className="break-words leading-tight">{feature}</span>
+                        {/* Video Section - Moved Here */}
+                        {property.videoUrls && property.videoUrls.length > 0 && (
+                            <div className="mb-8 p-1 bg-black rounded-xl overflow-hidden shadow-lg">
+                                <div className="aspect-video w-full relative group">
+                                    <video
+                                        src={property.videoUrls[0]}
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        poster={property.imageUrl}
+                                    />
                                 </div>
-                            ))}
+                            </div>
+                        )}
+
+                        {/* Description */}
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Overview</h3>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                                {property.description}
+                            </p>
+                        </div>
+
+                        {/* Features */}
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Features</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-gray-50 dark:bg-slate-900 p-6 rounded-lg">
+                                {property.features.map((feature, idx) => (
+                                    <div key={idx} className="flex items-start gap-3 text-slate-700 dark:text-slate-300 text-sm">
+                                        <CheckCircle2 size={18} className="text-zillow-600 shrink-0 mt-0.5" />
+                                        <span className="break-words leading-tight">{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

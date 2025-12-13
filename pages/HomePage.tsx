@@ -31,12 +31,12 @@ export const HomePage: React.FC = () => {
         const all = await propertyService.getAllProperties();
         setAllProperties(all);
 
-        // Fetch Featured (Limit 12 to match user request "only 12 in home")
-        const featured = await propertyService.getAllProperties({ isFeatured: true, limit: 12 });
+        // Fetch Featured (Limit 4)
+        const featured = await propertyService.getAllProperties({ isFeatured: true, limit: 4 });
         setFeaturedProperties(featured);
 
-        // Fetch Latest (Limit 6)
-        const latest = await propertyService.getAllProperties({ limit: 6 });
+        // Fetch Latest (Limit 4)
+        const latest = await propertyService.getAllProperties({ limit: 4 });
         setLatestProperties(latest);
       } catch (error) {
         console.error('Failed to load home data', error);
@@ -64,12 +64,26 @@ export const HomePage: React.FC = () => {
 
       allProperties.forEach(p => {
         const city = p.city || '';
-        const address = p.address || '';
         const state = p.state || '';
+        const fullAddress = p.address || '';
 
-        if (city.toLowerCase().includes(lowerQuery)) matches.add(city);
-        if (address.toLowerCase().includes(lowerQuery)) matches.add(address);
-        if (state.toLowerCase().includes(lowerQuery)) matches.add(state);
+        // 1. Suggest City/State if they match
+        if (city && city.toLowerCase().includes(lowerQuery)) matches.add(city);
+        if (state && state.toLowerCase().includes(lowerQuery)) matches.add(state);
+
+        // 2. Scan address segments (split by comma) for the keyword
+        // e.g. "No 2, Omojuwa Avenue, Kajola" -> ["No 2", "Omojuwa Avenue", "Kajola"]
+        const segments = fullAddress.split(',').map((s: string) => s.trim());
+
+        segments.forEach((seg: string) => {
+          // If this specific segment matches the query (and isn't too long/noisy), suggest it.
+          if (seg.toLowerCase().includes(lowerQuery) && seg.length < 50) {
+            // Avoid duplicates if it's just the city again
+            if (seg.toLowerCase() !== city.toLowerCase() && seg.toLowerCase() !== state.toLowerCase()) {
+              matches.add(seg);
+            }
+          }
+        });
       });
 
       setSuggestions(Array.from(matches).slice(0, 5));
@@ -102,7 +116,7 @@ export const HomePage: React.FC = () => {
       } else {
         return p.listingType === 'Rent';
       }
-    }).slice(0, 6);
+    }).slice(0, 4);
   }, [activeTab, featuredProperties]);
 
 
