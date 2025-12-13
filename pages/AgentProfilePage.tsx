@@ -188,14 +188,10 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            if (files.length + mediaPreviews.images.length > 4) {
-                showToast("You can only select up to 4 photos.", 'error');
-                e.target.value = '';
-                return;
-            }
-            const oversized = Array.from(files).some((file: any) => file.size > 500 * 1024);
+            // REMOVED: Max 4 images check
+            const oversized = Array.from(files).some((file: any) => file.size > 10 * 1024 * 1024);
             if (oversized) {
-                showToast("Some images are too large. Please select images under 500KB.", 'error');
+                showToast("Some images are too large. Please select images under 10MB.", 'error');
                 e.target.value = '';
                 return;
             }
@@ -213,8 +209,8 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                showToast("Video file is too large. Please select a video under 2MB.", 'error');
+            if (file.size > 100 * 1024 * 1024) {
+                showToast("Video file is too large. Please select a video under 100MB.", 'error');
                 e.target.value = '';
                 return;
             }
@@ -340,8 +336,8 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                showToast("Image is too large. Please select an image under 2MB.", 'error');
+            if (file.size > 10 * 1024 * 1024) {
+                showToast("Image is too large. Please select an image under 10MB.", 'error');
                 return;
             }
             const reader = new FileReader();
@@ -848,7 +844,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                             <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg mb-8 border border-gray-100 dark:border-gray-800">
                                                 <h5 className="font-bold text-slate-700 dark:text-slate-300 mb-4 text-sm uppercase">Media Uploads</h5>
                                                 <div className="mb-4">
-                                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Photos (Max 4)</label>
+                                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Photos</label>
                                                     <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative ${errors.images ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-gray-700'}`}>
                                                         <input type="file" accept="image/*" multiple className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleImageUpload} />
                                                         <ImageIcon className={`mx-auto mb-2 ${errors.images ? 'text-red-500' : 'text-slate-400'}`} size={32} />

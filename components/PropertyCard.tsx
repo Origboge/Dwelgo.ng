@@ -118,6 +118,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           )}
         </div>
 
+        <div className="text-lg font-bold text-slate-900 dark:text-white mb-1 truncate">
+          {property.title}
+        </div>
         <div className="text-slate-600 dark:text-slate-400 text-sm truncate mb-3">
           {property.address}, {property.city}, {property.state}
         </div>

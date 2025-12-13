@@ -181,6 +181,7 @@ class PropertyService {
         if (p.priceFrequency !== undefined) payload.priceFrequency = p.priceFrequency;
         if (p.plots !== undefined) payload.plots = p.plots;
         if (p.isFeatured !== undefined) payload.isFeatured = p.isFeatured;
+        if (p.videoUrls !== undefined) payload.videoUrls = p.videoUrls;
 
         return payload;
     }
