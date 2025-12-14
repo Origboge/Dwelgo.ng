@@ -229,97 +229,81 @@ export const PropertyDetailsPage: React.FC = () => {
                     {/* Main Content */}
                     <div className="lg:w-2/3">
 
-                        {/* PREMIUM HEADER CARD */}
-                        <div className="mb-8 relative">
-                            {/* Content */}
-                            <div className="relative bg-white dark:bg-[#121212] rounded-2xl p-6 md:p-8 border border-white dark:border-gray-800 shadow-xl shadow-slate-200/60 dark:shadow-none overflow-hidden ring-1 ring-slate-100 dark:ring-0">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50/80 to-transparent dark:from-blue-900/10 pointer-events-none rounded-tr-2xl"></div>
-
-                                <div className="relative">
-                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                                        {/* Price Section */}
-                                        <div>
-                                            <div className="flex items-baseline gap-2 mb-2">
-                                                <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-                                                    {formatPrice(property.price)}
-                                                </h1>
-                                                {property.ListingType === 'Rent' && <span className="text-2xl text-slate-400 font-medium">/mo</span>}
-                                            </div>
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider">
-                                                <div className={`w-2 h-2 rounded-full ${property.status === 'Sold' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
-                                                {property.status === 'Sold' ? 'Sold' : property.listingType}
-                                            </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex gap-2">
-                                            <button onClick={handleLike} className={`group flex items-center justify-center w-11 h-11 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all ${isLiked ? 'bg-pink-50 border-pink-100 text-pink-500' : 'text-slate-400 hover:text-pink-500 bg-white dark:bg-slate-800 shadow-sm'}`}>
-                                                <Heart className={`transition-transform group-hover:scale-110 ${isLiked ? "fill-current" : ""}`} size={20} />
-                                            </button>
-                                            <button className="group flex items-center justify-center w-11 h-11 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 hover:text-blue-500 transition-all bg-white dark:bg-slate-800 shadow-sm">
-                                                <Share2 size={20} className="transition-transform group-hover:scale-110" />
-                                            </button>
-                                        </div>
+                        {/* COMPACT HEADER CARD */}
+                        <div className="mb-4 relative">
+                            <div className="relative bg-white dark:bg-[#121212] rounded-xl p-4 md:p-5 border border-gray-100 dark:border-gray-800 shadow-lg">
+                                {/* Price Row with Likes/Share */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
+                                            {formatPrice(property.price)}
+                                        </h1>
+                                        {property.listingType === 'Rent' && <span className="text-base text-slate-400">/mo</span>}
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${property.status === 'Sold' ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                                            {property.status === 'Sold' ? 'Sold' : property.listingType}
+                                        </span>
                                     </div>
-
-                                    {/* Address Section */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-10 pb-8 border-b border-gray-50 dark:border-gray-800/50">
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-2.5 bg-blue-50/80 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
-                                                <MapPin size={22} strokeWidth={2.5} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-xl text-slate-800 dark:text-slate-200 leading-snug">{property.address}</p>
-                                                <p className="text-slate-500 font-medium">{property.city}, {property.state}</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={handleMapClick} className="ml-14 sm:ml-auto text-sm font-bold text-zillow-600 hover:text-zillow-700 hover:underline flex items-center gap-1 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
-                                            View on Map
+                                    <div className="flex gap-1.5">
+                                        <button onClick={handleLike} className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${isLiked ? 'bg-pink-50 border-pink-200 text-pink-500' : 'border-gray-200 dark:border-gray-700 text-slate-400 hover:text-pink-500 bg-white dark:bg-slate-800'}`}>
+                                            <Heart className={isLiked ? "fill-current" : ""} size={16} />
+                                        </button>
+                                        <button className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 transition-all">
+                                            <Share2 size={16} />
                                         </button>
                                     </div>
+                                </div>
 
-                                    {/* Premium Icon Stats Row */}
-                                    <div className="grid grid-cols-3 gap-2 md:gap-4">
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
-                                            <BedDouble size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
-                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.bedrooms}</span>
-                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Beds</span>
+                                {/* Beds/Baths/Sqft - Compact Inline Row */}
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="flex items-center gap-4 bg-slate-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 border border-slate-100 dark:border-gray-700">
+                                        <div className="flex items-center gap-1.5">
+                                            <BedDouble size={16} className="text-slate-400" />
+                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{property.bedrooms}</span>
+                                            <span className="text-xs text-slate-400">Beds</span>
                                         </div>
-
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
-                                            <Bath size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
-                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.bathrooms}</span>
-                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Baths</span>
+                                        <div className="w-px h-4 bg-slate-200 dark:bg-gray-700"></div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Bath size={16} className="text-slate-400" />
+                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{property.bathrooms}</span>
+                                            <span className="text-xs text-slate-400">Baths</span>
                                         </div>
-
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
-                                            <Move size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
-                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.sqft.toLocaleString()}</span>
-                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Sqft</span>
+                                        <div className="w-px h-4 bg-slate-200 dark:bg-gray-700"></div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Move size={16} className="text-slate-400" />
+                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{property.sqft?.toLocaleString()}</span>
+                                            <span className="text-xs text-slate-400">Sqft</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Address - Compact */}
+                                <div className="flex items-center gap-2 text-sm">
+                                    <MapPin size={14} className="text-blue-500 shrink-0" />
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">{property.address}, {property.city}, {property.state}</span>
+                                    <button onClick={handleMapClick} className="ml-auto text-xs font-semibold text-blue-600 hover:underline whitespace-nowrap">
+                                        View on Map
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
+                        {/* About this home - Card Style */}
+                        <div className="mb-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 md:p-5 border border-gray-100 dark:border-gray-800">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">About this property</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{property.description}</p>
+                        </div>
+
                         {/* Features - Card Style */}
-                        <div className="mb-8 bg-gray-50 dark:bg-slate-800/50 rounded-xl p-6 md:p-8 border border-gray-100 dark:border-gray-800">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Features</h3>
-                            <div className="flex flex-wrap gap-3">
+                        <div className="mb-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 md:p-5 border border-gray-100 dark:border-gray-800">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3">Features</h3>
+                            <div className="flex flex-wrap gap-2">
                                 {property.features.map((feature: string, idx: number) => (
-                                    <span key={idx} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-full text-sm font-bold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-default flex items-center gap-2">
-                                        <CheckCircle2 size={14} className="text-zillow-600" />
+                                    <span key={idx} className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700 flex items-center gap-1.5">
+                                        <CheckCircle2 size={12} className="text-green-500" />
                                         {feature}
                                     </span>
                                 ))}
-                            </div>
-                        </div>
-
-                        {/* About this home (Description) - Card Style */}
-                        <div className="mb-8 bg-gray-50 dark:bg-slate-800/50 rounded-xl p-6 md:p-8 border border-gray-100 dark:border-gray-800">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">About this home</h3>
-                            <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed text-base">
-                                <p className="whitespace-pre-line">{property.description}</p>
                             </div>
                         </div>
 
