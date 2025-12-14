@@ -12,7 +12,7 @@ import {
     Phone, Mail, MapPin, Award, Star, Globe, Linkedin, Twitter, Instagram, ShieldCheck,
     ArrowLeft, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
     DollarSign, Home, CheckSquare, Maximize, BarChart3, Users, MousePointerClick, Crosshair, MessageCircle, Camera,
-    CheckCircle2, AlertTriangle, Edit
+    CheckCircle2, AlertTriangle, Edit, BadgeCheck
 } from 'lucide-react';
 import { Agent } from '../types';
 import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
@@ -54,10 +54,19 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     });
 
     // Delete Modal State
-    const [deleteModal, setDeleteModal] = useState<{ visible: boolean; propertyId: string | null }>({
+    // Generic Action Confirmation Modal State
+    const [actionModal, setActionModal] = useState<{
+        visible: boolean;
+        type: 'delete' | 'edit' | 'relist' | 'mark_sold' | 'archive' | null;
+        propertyId: string | null;
+        propertyTitle?: string;
+    }>({
         visible: false,
+        type: null,
         propertyId: null
     });
+
+    const [showSoldOverlay, setShowSoldOverlay] = useState(false);
 
     // Helper to show toast
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -109,6 +118,8 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    // Track if we are in "Relist" mode to force status change
+    const [isRelisting, setIsRelisting] = useState(false);
 
     // Check if the current user is the owner of this agent profile
     // agent.userId might be an object (populated) or a string (ID) depending on API response
@@ -125,8 +136,11 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 setAgent(agentData);
 
                 if (agentData) {
-                    // 2. Fetch Agent's Properties
-                    const props = await propertyService.getAgentProperties(agentData.id);
+                    // 2. Fetch Agent's Properties (Include hidden if owner)
+                    const agentUserId = typeof agentData.userId === 'object' ? (agentData.userId as any)._id || (agentData.userId as any).id : agentData.userId;
+                    const isCurrentUserOwner = user?.role === 'agent' && user?.id === agentUserId;
+
+                    const props = await propertyService.getAgentProperties(agentData.id, isCurrentUserOwner);
                     setAgentProperties(props);
                 }
             } catch (err) {
@@ -137,6 +151,27 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         };
         fetchData();
     }, [id, refreshTrigger]);
+
+    // Helper to populate form data for editing (also used for Relist)
+    const populateEditForm = (property: Property) => {
+        setFormData({
+            title: property.title, description: property.description, price: property.price.toString(), priceFrequency: property.priceFrequency || 'Year',
+            address: property.address, city: property.city, state: property.state, type: property.type, listingType: property.listingType,
+            bedrooms: property.bedrooms?.toString() || '', bathrooms: property.bathrooms?.toString() || '', sqft: property.sqft.toString(),
+            plots: property.plots?.toString() || '', featuresList: property.features || [], imageUrl: property.imageUrl,
+            latitude: property.latitude?.toString() || '', longitude: property.longitude?.toString() || ''
+        });
+        setMediaPreviews({ images: property.gallery || [property.imageUrl], video: property.videoUrls?.[0] || null });
+    };
+
+    // Derived State
+    const isSold = (status: string) => status?.toLowerCase() === 'sold';
+    const isArchived = (status: string) => status?.toLowerCase() === 'archived'; // Logic: 'Archived' is hidden but not 'Sold'.
+
+    // Active: Not Sold AND Not Archived
+    const activeListings = agentProperties.filter(p => !isSold(p.status) && !isArchived(p.status));
+    const soldListings = agentProperties.filter(p => isSold(p.status));
+    const archivedListings = agentProperties.filter(p => isArchived(p.status));
 
     // Fetch Likes when tab is active
     useEffect(() => {
@@ -204,6 +239,18 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             });
             if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
         }
+    };
+
+    const handleRemoveImage = (index: number) => {
+        setMediaPreviews(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleRemoveVideo = () => {
+        setMediaPreviews(prev => ({ ...prev, video: null }));
+        // Also clear the file input if possible, but state is enough for preview
     };
 
     const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,14 +338,34 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 ? formData.featuresList
                 : formData.description.split('.').map(s => s.trim()).filter(s => s.length > 5).slice(0, 5),
             isFeatured: false,
-            status: 'Available',
-            description: formData.description,
-            addedAt: new Date().toISOString().split('T')[0],
-            latitude: Number(formData.latitude) || undefined,
-            longitude: Number(formData.longitude) || undefined,
-            priceFrequency: formData.priceFrequency as any || 'Year',
-            plots: Number(formData.plots) || 0
+            // If we are relisting, force status to Available. Otherwise default to Available for new, or undefined (handled by backend preservation) for edit
+            // Actually, for edits, we usually want to preserve status unless explicitly changing it.
+            // But if isRelisting is true, we MUST set it to Available.
+            status: isRelisting ? 'Available' : 'Available', // For new listings it is Available. For edits, if we send 'Available', we overwrite 'Sold'. 
+            // Wait, if we are editing a 'Sold' property to fix a typo, we don't want to make it Available unless requested.
+            // But currently the frontend hardcodes 'Available' for new.
+            // Let's refine:
+            // If editingId exists: preserve backend status? No, we send full object.
+            // If we send 'Available', it becomes available.
+            // So if I edit a Sold property, it effectively relists it unless I handle this.
+            // User didn't specify that edge case.
+            // But "Relist" specifically asks to open the dashboard.
+            // Let's assume standard Edit on Sold property *might* unintentionally relist it if I'm not careful.
+            // I should fetch the current status?
+            // Simplest path: If `isRelisting` is true, status='Available'.
+            // If `editingId` is set, and `!isRelisting`, we should ideally preserve.
+            // But here I'm creating `newProperty` with `status: 'Available'`. This overrides everything.
+            // I should grab the original property status if editing?
+            // Let's look up the property by `editingId` in `agentProperties`.
         };
+
+        // Fix status logic
+        const originalProp = agentProperties.find(p => p.id === editingId);
+        if (editingId && originalProp && !isRelisting) {
+            newProperty.status = originalProp.status; // Preserve original status
+        } else {
+            newProperty.status = 'Available'; // Default for new or Relist
+        }
 
         setTimeout(async () => {
             try {
@@ -317,6 +384,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     featuresList: [], imageUrl: '', latitude: '', longitude: ''
                 });
                 setEditingId(null);
+                setIsRelisting(false); // Reset
                 setRefreshTrigger(prev => prev + 1);
             } catch (error: any) {
                 console.error(error);
@@ -396,23 +464,29 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     </div>
                 </div>
 
-                {/* Profile Card Container - Overlapping Cover */}
-                <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative -mt-20 mb-12">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-                        {/* Avatar */}
-                        <div className="relative group shrink-0">
-                            {agent.avatar ? (
-                                <img
-                                    src={agent.avatar}
-                                    alt={agent.firstName}
-                                    className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md bg-gray-200"
-                                />
-                            ) : (
-                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-slate-800 shadow-md bg-zillow-600 text-white flex items-center justify-center text-4xl font-bold tracking-wider">
-                                    {getInitials(agent.firstName, agent.lastName)}
-                                </div>
-                            )}
+                {/* Profile Card Container - Modern Billion Dollar Style (Resized) */}
+                <div className="container max-w-3xl mx-auto px-4 relative -mt-24 mb-12 z-10">
+                    <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-xl border border-white/20 dark:border-slate-800 p-6 flex flex-col items-center text-center relative overflow-hidden backdrop-blur-xl transition-colors duration-300">
+                        {/* Decorative Background Glow - Dark Mode Only */}
+                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none dark:from-blue-500/10"></div>
 
+                        {/* Avatar */}
+                        <div className="relative mb-4">
+                            <div className="w-28 h-28 rounded-full p-0.5 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-xl">
+                                {agent.avatar ? (
+                                    <img
+                                        src={agent.avatar}
+                                        alt={agent.firstName}
+                                        className="w-full h-full rounded-full object-cover border-2 border-white dark:border-[#0F172A]"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center text-3xl font-bold border-2 border-white dark:border-[#0F172A]">
+                                        {getInitials(agent.firstName, agent.lastName)}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Camera Icon for Owner */}
                             {isOwner && (
                                 <>
                                     <input
@@ -424,97 +498,66 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     />
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white z-10"
+                                        className="absolute bottom-1 right-1 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full shadow transition-transform hover:scale-110 border-2 border-white dark:border-[#0F172A]"
+                                        title="Change Profile Photo"
                                     >
-                                        <Camera size={24} />
+                                        <Camera size={16} />
                                     </button>
                                 </>
                             )}
-                            <div className="absolute bottom-2 right-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold px-2 py-1 rounded-full text-xs shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-1 z-20">
-                                <Star size={12} className="fill-yellow-500 text-yellow-500" /> {agent.rating}
-                            </div>
                         </div>
 
+                        {/* Name & Title */}
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1 uppercase">
+                            {agent.firstName} <span className="text-slate-500 dark:text-slate-400">{agent.lastName}</span>
+                        </h1>
+                        <p className="text-base text-blue-600 dark:text-blue-400 font-medium mb-4 tracking-wide flex items-center gap-2 justify-center">
+                            {agent.agencyName || 'Real Estate Professional'}
+                            {agent.isVerified && <BadgeCheck size={18} className="text-blue-500 fill-blue-500/20" />}
+                        </p>
+
+                        {/* Owner Badge */}
                         {isOwner && (
-                            <>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleAvatarChange}
-                                />
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
-                                >
-                                    <Camera size={24} />
-                                </button>
-                            </>
+                            <div className="mb-6">
+                                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 font-bold text-xs uppercase tracking-wider">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> View as: Owner
+                                </span>
+                            </div>
                         )}
-                        <div className="absolute -bottom-2 -right-2 bg-white text-slate-900 font-bold px-2 py-1 rounded-full text-xs shadow border border-gray-200 flex items-center gap-1">
-                            <Star size={10} className="fill-yellow-500 text-yellow-500" /> {agent.rating} ({agent.ratingCount || 12} reviews)
-                        </div>
 
-                        <div className="flex-1">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                    <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">{agent.firstName} {agent.lastName}</h1>
-                                    <p className="text-slate-600 dark:text-slate-400 font-medium mb-2 text-lg">{agent.agencyName}</p>
+                        {/* Stats / Details Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full max-w-xl border-t border-slate-200 dark:border-slate-800 pt-6">
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Rating</div>
+                                <div className="text-slate-900 dark:text-white font-black text-lg flex items-center justify-center gap-1">
+                                    <Star className="text-yellow-500 fill-yellow-500" size={16} /> {agent.rating}
                                 </div>
-                                {isOwner && (
-                                    <div className="bg-green-100 text-green-800 px-5 py-2 rounded-full text-sm font-bold border border-green-200">
-                                        View as: Owner
-                                    </div>
-                                )}
                             </div>
-
-                            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 dark:text-slate-400 mb-6 mt-3 font-medium">
-                                <span className="flex items-center gap-1"><MapPin size={16} className="text-zillow-600" /> {agent.location || user?.location || 'Lagos, Nigeria'}</span>
-                                {agent.experience && <span className="flex items-center gap-1"><Award size={16} className="text-zillow-600" /> {agent.experience} Years Experience</span>}
-                                {agent.licenseNumber && <span className="flex items-center gap-1"><ShieldCheck size={16} className="text-zillow-600" /> Lic: {agent.licenseNumber}</span>}
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Listings</div>
+                                <div className="text-slate-900 dark:text-white font-black text-lg">{agentProperties.length || 0}</div>
                             </div>
-
-                            {!isOwner && (
-                                user ? (
-                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm w-full">
-                                        <h4 className="font-bold text-slate-900 dark:text-white mb-3">Contact Details</h4>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
-                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                                                    <Phone size={16} />
-                                                </div>
-                                                <span className="font-medium selection:bg-green-100">{agent.phone}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                                    <Mail size={16} />
-                                                </div>
-                                                <span className="font-medium selection:bg-blue-100">{agent.email}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
-                                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                                    <MessageCircle size={16} />
-                                                </div>
-                                                <span className="font-medium">WhatsApp Available</span>
-                                            </div>
-                                        </div>
-                                        <a href={`tel:${agent.phone}`} className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-zillow-600 hover:bg-zillow-700 text-white rounded-md font-bold transition-colors">
-                                            <Phone size={18} /> Call Agent
-                                        </a>
-                                    </div>
-                                ) : (
-                                    <div className="bg-gray-50 dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
-                                        <Lock className="mx-auto text-slate-400 mb-2" size={32} />
-                                        <p className="font-bold text-slate-900 dark:text-white mb-1">Contact Info Hidden</p>
-                                        <p className="text-sm text-slate-500 mb-4">Sign in to view this agent's phone number and email.</p>
-                                        <Button variant="primary" className="w-full justify-center" onClick={() => navigate('/login')}>
-                                            Sign In to View
-                                        </Button>
-                                    </div>
-                                )
-                            )}
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Experience</div>
+                                <div className="text-slate-900 dark:text-white font-black text-lg">{agent.experience || '1+'} Yrs</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Location</div>
+                                <div className="text-slate-900 dark:text-white font-bold text-base truncate px-1">{agent.location || 'Lagos'}</div>
+                            </div>
                         </div>
+
+                        {/* Contact Info (if not owner) */}
+                        {!isOwner && user && (
+                            <div className="mt-6 flex gap-3">
+                                <a href={`tel:${agent.phone}`} className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full font-bold hover:opacity-90 transition-opacity text-sm">
+                                    <Phone size={16} /> Call Agent
+                                </a>
+                                <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors text-sm">
+                                    <Mail size={16} /> Message
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -553,44 +596,87 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 )
             }
 
-            {/* Delete Confirmation Modal */}
+            {/* Generic Action Confirmation Modal */}
             {
-                deleteModal.visible && (
+                actionModal.visible && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-gray-100 dark:border-gray-800 transform scale-100 transition-all">
-                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <AlertTriangle className="text-red-600 dark:text-red-500" size={32} />
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-gray-100 dark:border-gray-800 transform scale-100 transition-all animate-bounce-in">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${actionModal.type === 'delete' ? 'bg-red-100 text-red-600' :
+                                actionModal.type === 'mark_sold' ? 'bg-green-100 text-green-600' :
+                                    'bg-blue-100 text-blue-600'
+                                }`}>
+                                {actionModal.type === 'delete' ? <AlertTriangle size={32} /> :
+                                    actionModal.type === 'mark_sold' ? <CheckCircle2 size={32} /> :
+                                        <Edit size={32} />
+                                }
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Listing?</h3>
-                            <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm">
-                                Are you sure you want to delete this property? This action cannot be undone.
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                                {actionModal.type === 'delete' && 'Delete Listing?'}
+                                {actionModal.type === 'mark_sold' && 'Mark as Sold?'}
+                                {actionModal.type === 'archive' && 'Archive Listing?'}
+                                {(actionModal.type === 'edit' || actionModal.type === 'relist') && 'Edit Listing?'}
+                            </h3>
+                            <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm leading-relaxed">
+                                {actionModal.type === 'delete' && 'Are you sure you want to delete this property? This action cannot be undone.'}
+                                {actionModal.type === 'mark_sold' && 'This will move the property to your Sold Archive and hide it from potential buyers.'}
+                                {actionModal.type === 'archive' && 'This will move the property to your Archives (Hidden). It will NOT be marked as sold, just hidden.'}
+                                {actionModal.type === 'edit' && `You are about to edit "${actionModal.propertyTitle}". Proceed?`}
+                                {actionModal.type === 'relist' && `You are about to relist "${actionModal.propertyTitle}". We'll open the editor so you can update details before publishing.`}
                             </p>
                             <div className="flex gap-3">
                                 <Button
                                     variant="outline"
                                     className="flex-1 py-2.5 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                                    onClick={() => setDeleteModal({ visible: false, propertyId: null })}
+                                    onClick={() => setActionModal({ visible: false, type: null, propertyId: null })}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     variant="primary"
-                                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 border-none text-white shadow-lg shadow-red-200 dark:shadow-none"
+                                    className={`flex-1 py-2.5 border-none text-white shadow-lg ${actionModal.type === 'delete' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' :
+                                        'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                                        }`}
                                     onClick={async () => {
-                                        if (deleteModal.propertyId) {
+                                        if (actionModal.propertyId) {
                                             try {
-                                                await propertyService.deleteProperty(deleteModal.propertyId);
-                                                setRefreshTrigger(prev => prev + 1);
-                                                showToast('Property deleted successfully', 'success');
-                                                setDeleteModal({ visible: false, propertyId: null });
-                                            } catch (err) {
+                                                if (actionModal.type === 'delete') {
+                                                    await propertyService.deleteProperty(actionModal.propertyId);
+                                                    setRefreshTrigger(prev => prev + 1);
+                                                    showToast('Property deleted successfully', 'success');
+                                                } else if (actionModal.type === 'mark_sold') {
+                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'sold' });
+                                                    setRefreshTrigger(prev => prev + 1);
+                                                    setShowSoldOverlay(true);
+                                                    setTimeout(() => setShowSoldOverlay(false), 3000);
+                                                } else if (actionModal.type === 'archive') {
+                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'archived' });
+                                                    setRefreshTrigger(prev => prev + 1);
+                                                    showToast('Property Archived (Hidden)', 'success');
+                                                } else if (actionModal.type === 'edit' || actionModal.type === 'relist') {
+                                                    // Logic for Edit/Relist
+                                                    const property = agentProperties.find(p => p.id === actionModal.propertyId);
+                                                    if (property) {
+                                                        setEditingId(property.id);
+                                                        populateEditForm(property); // Use new helper
+                                                        setShowAddForm(true);
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                                                        if (actionModal.type === 'relist') {
+                                                            setIsRelisting(true); // Flag this session as a relist
+                                                        } else {
+                                                            setIsRelisting(false);
+                                                        }
+                                                    }
+                                                }
+                                                setActionModal({ visible: false, type: null, propertyId: null });
+                                            } catch (err: any) {
                                                 console.error(err);
-                                                showToast('Failed to delete property', 'error');
+                                                showToast(err.response?.data?.message || 'Action failed', 'error');
                                             }
                                         }
                                     }}
                                 >
-                                    Delete
+                                    Confirm
                                 </Button>
                             </div>
                         </div>
@@ -810,7 +896,15 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <Input label="Price (NGN)" name="price" value={formData.price} onChange={handleInputChange} placeholder="e.g. 150000000" type="number" icon={<span className="text-gray-500 font-bold">₦</span>} error={errors.price} />
+                                                    <div className="relative">
+                                                        <Input label="Price (NGN)" name="price" value={formData.price} onChange={handleInputChange} placeholder="e.g. 150000000" type="number" icon={<span className="text-gray-500 font-bold">₦</span>} error={errors.price} />
+                                                        {formData.price && !isNaN(Number(formData.price)) && (
+                                                            <div className="mt-1.5 flex items-center gap-2 text-sm font-bold text-green-600 bg-green-50 dark:bg-green-900/10 px-3 py-1.5 rounded-md border border-green-100 dark:border-green-900/30 animate-fade-in">
+                                                                <CheckCircle2 size={14} className="shrink-0" />
+                                                                ₦ {Number(formData.price).toLocaleString()}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     {formData.listingType === 'Rent' && (
                                                         <div>
                                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Frequency</label>
@@ -854,8 +948,16 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     {mediaPreviews.images.length > 0 && (
                                                         <div className="mt-4 grid grid-cols-4 gap-2">
                                                             {mediaPreviews.images.map((img, idx) => (
-                                                                <div key={idx} className="relative aspect-square rounded overflow-hidden border border-gray-200">
+                                                                <div key={idx} className="relative aspect-square rounded overflow-hidden border border-gray-200 group">
                                                                     <img src={img} alt="Preview" className="w-full h-full object-cover" />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveImage(idx)}
+                                                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 hover:scale-110"
+                                                                        title="Remove Image"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -871,8 +973,16 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     </div>
                                                     {errors.video && <p className="text-red-500 text-xs mt-1">{errors.video}</p>}
                                                     {mediaPreviews.video && (
-                                                        <div className="mt-4">
+                                                        <div className="mt-4 relative group rounded overflow-hidden">
                                                             <video src={mediaPreviews.video} controls className="w-full h-48 rounded bg-black" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleRemoveVideo}
+                                                                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 hover:scale-110 z-10"
+                                                                title="Remove Video"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1002,47 +1112,33 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     </div>
                                 )}
 
-                                <div className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-4 flex justify-between items-end">
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Current Listings ({agentProperties.length})</h3>
-                                </div>
-
-                                <div>
-                                    {agentProperties.length > 0 ? (
+                                <div className="mb-12">
+                                    {activeListings.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {agentProperties.map(property => (
+                                            {activeListings.map(property => (
                                                 <div key={property.id} className="relative group">
                                                     <PropertyCard property={property} />
                                                     {isOwner && (
                                                         <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
                                                             <button onClick={() => {
-                                                                setEditingId(property.id);
-                                                                setFormData({
-                                                                    title: property.title, description: property.description, price: property.price.toString(), priceFrequency: property.priceFrequency || 'Year',
-                                                                    address: property.address, city: property.city, state: property.state, type: property.type, listingType: property.listingType,
-                                                                    bedrooms: property.bedrooms?.toString() || '', bathrooms: property.bathrooms?.toString() || '', sqft: property.sqft.toString(),
-                                                                    plots: property.plots?.toString() || '', featuresList: property.features || [], imageUrl: property.imageUrl,
-                                                                    latitude: property.latitude?.toString() || '', longitude: property.longitude?.toString() || ''
-                                                                });
-                                                                setMediaPreviews({ images: property.gallery || [property.imageUrl], video: property.videoUrls?.[0] || null });
-                                                                setShowAddForm(true);
-                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                            }} className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-blue-700 hover:bg-blue-700">Edit</button>
-                                                            <button onClick={async () => {
-                                                                try {
-                                                                    const newStatus = property.status === 'Sold' ? 'Available' : 'Sold';
-                                                                    await propertyService.updateProperty(property.id, { status: newStatus });
-                                                                    setRefreshTrigger(prev => prev + 1);
-                                                                    showToast(`Property marked as ${newStatus}`, 'success');
-                                                                } catch (err: any) {
-                                                                    console.error(err);
-                                                                    showToast(err.response?.data?.message || 'Failed to update status', 'error');
-                                                                }
-                                                            }} className={`${property.status === 'Sold' ? 'bg-green-600 text-white border-green-700' : 'bg-white text-slate-900 border-gray-200'} text-xs font-bold px-3 py-1 rounded shadow-md border hover:opacity-90 transition-opacity`}>
-                                                                {property.status === 'Sold' ? 'Relist Property' : 'Mark as Sold'}
-                                                            </button>
+                                                                setActionModal({ visible: true, type: 'edit', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-blue-700 hover:bg-blue-700 hover:scale-105 transition-all">Edit</button>
+
                                                             <button onClick={() => {
-                                                                setDeleteModal({ visible: true, propertyId: property.id });
-                                                            }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600">Delete</button>
+                                                                setActionModal({ visible: true, type: 'mark_sold', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-white text-slate-900 border-gray-200 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-gray-50 hover:text-green-600 hover:scale-105 transition-all">
+                                                                Mark as Sold
+                                                            </button>
+
+                                                            <button onClick={() => {
+                                                                setActionModal({ visible: true, type: 'archive', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-white text-slate-900 border-gray-200 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-gray-50 hover:text-orange-600 hover:scale-105 transition-all">
+                                                                Archive
+                                                            </button>
+
+                                                            <button onClick={() => {
+                                                                setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1055,6 +1151,96 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Sold / Archived Listings Section */}
+                                {soldListings.length > 0 && (
+                                    <div className="animate-fade-in">
+                                        <div className="mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
+                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                Sold Listings <span className="text-sm font-normal text-slate-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{soldListings.length}</span>
+                                            </h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-75 hover:opacity-100 transition-opacity">
+                                            {soldListings.map(property => (
+                                                <div key={property.id} className="relative group grayscale hover:grayscale-0 transition-all">
+                                                    <PropertyCard property={property} />
+                                                    {isOwner && (
+                                                        <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                                                            {/* Relist Button */}
+                                                            <button onClick={() => {
+                                                                setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-green-600 text-white border-green-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-green-700 hover:scale-105 transition-all">
+                                                                Relist Property
+                                                            </button>
+
+                                                            <button onClick={() => {
+                                                                setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
+                                                            }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
+                                                        </div>
+                                                    )}
+                                                    {/* Sold Badge Overlay */}
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white font-black text-xl px-6 py-2 rounded-lg -rotate-12 shadow-xl border-2 border-white pointer-events-none">
+                                                        SOLD
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Archived Listings Section */}
+                                {archivedListings.length > 0 && isOwner && (
+                                    <div className="mt-12 animate-fade-in">
+                                        <div className="mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
+                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                Archived Listings <span className="text-sm font-normal text-slate-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{archivedListings.length}</span>
+                                            </h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60 hover:opacity-100 transition-opacity">
+                                            {archivedListings.map(property => (
+                                                <div key={property.id} className="relative group">
+                                                    <PropertyCard property={property} />
+                                                    {/* Archived Overlay */}
+                                                    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[1px] rounded-xl pointer-events-none"></div>
+
+                                                    <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                                                        <button onClick={() => {
+                                                            setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
+                                                        }} className="bg-blue-600 text-white border-blue-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-blue-700 hover:scale-105 transition-all">
+                                                            Unarchive (Relist)
+                                                        </button>
+
+                                                        <button onClick={() => {
+                                                            setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
+                                                        }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
+                                                    </div>
+
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-800 text-white font-bold text-lg px-6 py-2 rounded-lg shadow-xl border border-slate-600 pointer-events-none">
+                                                        ARCHIVED
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+
+                                {/* SOLD OVERLAY POPUP */}
+                                {showSoldOverlay && (
+                                    <div className="fixed inset-0 z-[150] flex items-center justify-center pointer-events-none">
+                                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] animate-fade-in"></div>
+                                        <div className="bg-white dark:bg-slate-900 px-8 py-6 rounded-2xl shadow-2xl border-2 border-green-500 transform scale-110 animate-bounce-in flex flex-col items-center gap-4 text-center z-10">
+                                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                                                <CheckCircle2 size={48} className="text-green-600" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-wide">Sold!</h2>
+                                                <p className="text-slate-500 font-medium">Property moved to archive.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                             </>
                         )}
                     </div>

@@ -109,76 +109,77 @@ export const UserDashboardPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Profile Card */}
                     <div className="lg:w-1/3">
-                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
-                            <div className="p-6 text-center border-b border-gray-100 dark:border-gray-800">
-                                <div className="relative inline-block mb-4 group">
+                        <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-xl border border-white/20 dark:border-slate-800 p-6 flex flex-col items-center text-center relative overflow-hidden backdrop-blur-xl transition-colors duration-300">
+                            {/* Decorative Background Glow - Dark Mode Only */}
+                            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none dark:from-blue-500/10"></div>
+
+                            <div className="relative mb-4">
+                                <div className="w-28 h-28 rounded-full p-0.5 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-xl">
                                     {user.avatar ? (
                                         <img
                                             src={user.avatar}
                                             alt="Profile"
-                                            className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md bg-gray-200"
+                                            className="w-full h-full rounded-full object-cover border-2 border-white dark:border-[#0F172A]"
                                         />
                                     ) : (
-                                        <div className="w-32 h-32 rounded-full border-4 border-white dark:border-slate-800 shadow-md bg-zillow-600 text-white flex items-center justify-center text-3xl font-bold tracking-wider">
+                                        <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center text-3xl font-bold border-2 border-white dark:border-[#0F172A]">
                                             {getInitials(user.firstName || user.name || 'U', user.lastName || '')}
                                         </div>
                                     )}
-
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleAvatarChange}
-                                    />
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="absolute bottom-0 right-0 p-2 bg-zillow-600 text-white rounded-full hover:bg-zillow-700 transition-colors shadow-sm"
-                                        title="Change Profile Picture"
-                                    >
-                                        <Camera size={18} />
-                                    </button>
                                 </div>
 
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{user.firstName} {user.lastName || user.name}</h2>
-                                <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-4">
-                                    <span className="capitalize px-2 py-0.5 bg-gray-100 dark:bg-slate-800 rounded-full">{user.role} Account</span>
-                                </div>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleAvatarChange}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute bottom-1 right-1 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full shadow transition-transform hover:scale-110 border-2 border-white dark:border-[#0F172A]"
+                                    title="Change Profile Picture"
+                                >
+                                    <Camera size={16} />
+                                </button>
                             </div>
 
-                            <div className="p-6 space-y-4">
+                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-1 uppercase tracking-tight">
+                                {user.firstName} <span className="text-slate-500 dark:text-slate-400">{user.lastName || user.name}</span>
+                            </h2>
+                            <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-6 font-medium">
+                                <span className="capitalize px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">{user.role} Account</span>
+                            </div>
+
+                            <div className="w-full space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Address</label>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                            <Mail size={16} />
-                                            <span>{user.email}</span>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Address</label>
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                            <Mail size={16} className="text-blue-500" />
+                                            <span className="truncate max-w-[180px]">{user.email}</span>
                                         </div>
                                         {user.isVerified ? (
-                                            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full font-bold">
-                                                <CheckCircle2 size={12} /> Verified
-                                            </span>
+                                            <CheckCircle2 size={16} className="text-green-500" />
                                         ) : (
-                                            <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full font-bold">
-                                                <ShieldAlert size={12} /> Unverified
-                                            </span>
+                                            <ShieldAlert size={16} className="text-amber-500" />
                                         )}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Phone Number</label>
-                                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                        <Phone size={16} />
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Phone Number</label>
+                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                        <Phone size={16} className="text-blue-500" />
                                         <span>{user.phone || 'Not set'}</span>
                                     </div>
                                 </div>
 
                                 {user.role === 'agent' && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="pt-2">
                                         <Button
                                             variant="outline"
-                                            className="w-full flex items-center justify-center gap-2"
+                                            className="w-full flex items-center justify-center gap-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                                             onClick={() => window.location.href = `#/agents/${user.id}`}
                                         >
                                             <LayoutDashboard size={16} /> Go to Agent Profile

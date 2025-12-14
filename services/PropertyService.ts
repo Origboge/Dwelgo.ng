@@ -38,7 +38,7 @@ class PropertyService {
                 phone: agentProfile.phone,
                 avatar: agentUser.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName),
                 agencyName: agentProfile.businessName,
-                rating: agentProfile.rating || 0,
+                rating: (typeof agentProfile.rating === 'object' ? agentProfile.rating?.average : agentProfile.rating) || 0,
                 location: agentProfile.address || '',
             },
             features: p.features || [],
@@ -55,7 +55,8 @@ class PropertyService {
     // Fetch all properties with optional filters
     async getAllProperties(filters?: any): Promise<Property[]> {
         try {
-            const response = await api.get('/properties', { params: { ...filters, limit: 1000 } });
+            const limit = filters?.limit || 1000;
+            const response = await api.get('/properties', { params: { ...filters, limit } });
             const rawData = response.data.data || [];
             return rawData.map((p: any) => this.mapBackendProperty(p));
         } catch (error) {
@@ -98,16 +99,21 @@ class PropertyService {
         }
     }
 
-    async getAgentProperties(agentId?: string): Promise<Property[]> {
+    async getAgentProperties(agentId?: string, includeHidden: boolean = false): Promise<Property[]> {
         try {
-            const response = await api.get('/properties');
-            const all = response.data.data || [];
-            // Filter logic if backend doesn't explicitly support agentId filter in the public endpoint
-            const filtered = agentId
-                ? all.filter((p: any) => p.agentId?._id === agentId || p.agentId === agentId)
-                : all;
+            if (includeHidden) {
+                // Fetch owner's listings (including hidden/sold) via dedicated endpoint
+                const response = await api.get('/properties/agent/my-listings?limit=50');
+                const all = response.data.data || [];
+                return all.map((p: any) => this.mapBackendProperty(p));
+            }
 
-            return filtered.map((p: any) => this.mapBackendProperty(p));
+            const params: any = {};
+            if (agentId) params.agentId = agentId;
+
+            const response = await api.get('/properties', { params });
+            const all = response.data.data || [];
+            return all.map((p: any) => this.mapBackendProperty(p));
         } catch (error) {
             console.error('Failed to fetch agent properties', error);
             return [];
@@ -166,7 +172,8 @@ class PropertyService {
         }
 
         if (p.gallery !== undefined || p.imageUrl !== undefined) {
-            payload.images = p.gallery?.map(url => ({ url })) || (p.imageUrl ? [{ url: p.imageUrl }] : []);
+            // Backend expects [String], not [{url: String}]
+            payload.images = p.gallery || (p.imageUrl ? [p.imageUrl] : []);
         }
 
         if (p.features !== undefined) payload.features = p.features;
@@ -189,7 +196,6 @@ class PropertyService {
     async createProperty(property: Partial<Property>): Promise<Property | null> {
         try {
             const payload = this.mapFrontendToBackendProperty(property);
-            console.log('Sending Property Payload:', JSON.stringify(payload, null, 2));
 
             const response = await api.post('/properties', payload);
             return response.data.data ? this.mapBackendProperty(response.data.data) : null;

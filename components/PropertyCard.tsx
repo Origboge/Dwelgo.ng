@@ -127,10 +127,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
 
         <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
           <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-            {property.type.toUpperCase()}
+            {property.type?.toUpperCase() || 'PROPERTY'}
           </div>
           <div className="text-[10px] font-bold text-zillow-600">
-            {property.agent.agencyName.toUpperCase()}
+            {property.agent?.agencyName?.toUpperCase() || 'AGENT'}
           </div>
         </div>
       </div>

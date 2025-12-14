@@ -47,6 +47,10 @@ class AgentService {
             userId: data.userId // Preserve the userId (populated object or ID)
         };
     }
+    async rateAgent(agentId: string, rating: number): Promise<{ newRating: number; count: number }> {
+        const response = await api.post(`/agents/${agentId}/rate`, { rating });
+        return response.data.data;
+    }
 }
 
 export const agentService = new AgentService();

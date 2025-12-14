@@ -4,7 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { propertyService } from '../services/PropertyService';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X } from 'lucide-react';
+import { agentService } from '../services/AgentService';
 
 export const PropertyDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -17,8 +18,33 @@ export const PropertyDetailsPage: React.FC = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showLoginTooltip, setShowLoginTooltip] = useState(false);
 
+    // Rating State
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [ratingValue, setRatingValue] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+
     // Derived State
     const isLiked = property && user?.savedPropertyIds?.includes(property.id);
+
+    const handleSubmitRating = async () => {
+        if (!property || ratingValue === 0) return;
+        try {
+            const result = await agentService.rateAgent(property.agent.id, ratingValue);
+            // Update local property agent rating
+            setProperty((prev: any) => ({
+                ...prev,
+                agent: {
+                    ...prev.agent,
+                    rating: result.newRating
+                }
+            }));
+            setIsRatingModalOpen(false);
+            alert(`Thanks! You rated ${property.agent.firstName} ${ratingValue} stars.`);
+        } catch (error) {
+            console.error('Rating failed', error);
+            alert('Rating failed. You might have already rated this agent?');
+        }
+    };
 
     const handleLike = async () => {
         if (!user) {
@@ -88,10 +114,13 @@ export const PropertyDetailsPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen text-slate-900 dark:text-white pb-20 bg-white dark:bg-[#0a0a0a]">
+        <div className="min-h-screen text-slate-900 dark:text-white pb-20 bg-slate-50 dark:bg-[#0a0a0a] relative overflow-hidden">
+            {/* Decorative Background Blob for "Life" */}
+            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-900/10 pointer-events-none opacity-60"></div>
+
             {/* Navigation / Breadcrumb */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-zillow-600 hover:underline font-bold text-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-10">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white font-bold text-sm transition-colors">
                     <ChevronLeft size={16} /> Back to Search
                 </button>
             </div>
@@ -99,9 +128,9 @@ export const PropertyDetailsPage: React.FC = () => {
             {/* ERROR / LOADING HANDLED ABOVE */}
 
             {/* IMAGE GALLERY SECTION */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 {/* Mobile: Carousel (Visible only on small screens) */}
-                <div className="md:hidden relative h-[300px] rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 mb-6 group">
+                <div className="md:hidden relative h-[300px] rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 mb-6 group shadow-md">
                     {/* Reuse existing carousel logic but with reduced height */}
                     <div
                         className="w-full h-full"
@@ -137,7 +166,7 @@ export const PropertyDetailsPage: React.FC = () => {
                 </div>
 
                 {/* Desktop: Bento Grid (Visible on md+) */}
-                <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 h-[500px] rounded-xl overflow-hidden mb-8">
+                <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 h-[500px] rounded-xl overflow-hidden mb-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
                     {/* Main Large Image - Now with Controls */}
                     <div className="col-span-2 row-span-2 relative group cursor-pointer" onClick={() => setCurrentImageIndex(0)}>
                         <img
@@ -195,61 +224,80 @@ export const PropertyDetailsPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col lg:flex-row gap-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
                     {/* Main Content */}
                     <div className="lg:w-2/3">
 
-                        {/* HEADER: Price & Stats First */}
-                        <div className="border-b border-gray-200 dark:border-gray-800 pb-6 mb-8">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-                                        {formatPrice(property.price)}
-                                        {property.ListingType === 'Rent' && <span className="text-2xl text-slate-500 font-normal">/mo</span>}
-                                    </h1>
+                        {/* PREMIUM HEADER CARD */}
+                        <div className="mb-8 relative">
+                            {/* Content */}
+                            <div className="relative bg-white dark:bg-[#121212] rounded-2xl p-6 md:p-8 border border-white dark:border-gray-800 shadow-xl shadow-slate-200/60 dark:shadow-none overflow-hidden ring-1 ring-slate-100 dark:ring-0">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50/80 to-transparent dark:from-blue-900/10 pointer-events-none rounded-tr-2xl"></div>
 
-                                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-lg md:text-xl text-slate-800 dark:text-slate-200 mb-4 font-semibold">
-                                        <span className="flex items-center gap-1">
-                                            <span className="font-bold">{property.bedrooms}</span> <span className="text-slate-500 font-normal">bds</span>
-                                        </span>
-                                        <span className="w-px h-5 bg-gray-300 dark:bg-gray-700"></span>
-                                        <span className="flex items-center gap-1">
-                                            <span className="font-bold">{property.bathrooms}</span> <span className="text-slate-500 font-normal">ba</span>
-                                        </span>
-                                        <span className="w-px h-5 bg-gray-300 dark:bg-gray-700"></span>
-                                        <span className="flex items-center gap-1">
-                                            <span className="font-bold">{property.sqft.toLocaleString()}</span> <span className="text-slate-500 font-normal">sqft</span>
-                                        </span>
-                                        <span className="w-px h-5 bg-gray-300 dark:bg-gray-700"></span>
-                                        <span className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded uppercase font-bold tracking-wide dark:bg-blue-900/30 dark:text-blue-300">{property.type}</span>
+                                <div className="relative">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                                        {/* Price Section */}
+                                        <div>
+                                            <div className="flex items-baseline gap-2 mb-2">
+                                                <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
+                                                    {formatPrice(property.price)}
+                                                </h1>
+                                                {property.ListingType === 'Rent' && <span className="text-2xl text-slate-400 font-medium">/mo</span>}
+                                            </div>
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider">
+                                                <div className={`w-2 h-2 rounded-full ${property.status === 'Sold' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
+                                                {property.status === 'Sold' ? 'Sold' : property.listingType}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex gap-2">
+                                            <button onClick={handleLike} className={`group flex items-center justify-center w-11 h-11 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all ${isLiked ? 'bg-pink-50 border-pink-100 text-pink-500' : 'text-slate-400 hover:text-pink-500 bg-white dark:bg-slate-800 shadow-sm'}`}>
+                                                <Heart className={`transition-transform group-hover:scale-110 ${isLiked ? "fill-current" : ""}`} size={20} />
+                                            </button>
+                                            <button className="group flex items-center justify-center w-11 h-11 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 hover:text-blue-500 transition-all bg-white dark:bg-slate-800 shadow-sm">
+                                                <Share2 size={20} className="transition-transform group-hover:scale-110" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-                                        <p className="text-slate-600 dark:text-slate-400 font-medium text-lg flex items-center gap-2">
-                                            <MapPin size={18} className="text-slate-400 shrink-0" />
-                                            {property.address}, {property.city}, {property.state}
-                                        </p>
-                                        <button onClick={handleMapClick} className="text-zillow-600 hover:text-zillow-700 font-bold text-sm flex items-center gap-1 hover:underline">
-                                            Show on Map
+                                    {/* Address Section */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-10 pb-8 border-b border-gray-50 dark:border-gray-800/50">
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2.5 bg-blue-50/80 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
+                                                <MapPin size={22} strokeWidth={2.5} />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-xl text-slate-800 dark:text-slate-200 leading-snug">{property.address}</p>
+                                                <p className="text-slate-500 font-medium">{property.city}, {property.state}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={handleMapClick} className="ml-14 sm:ml-auto text-sm font-bold text-zillow-600 hover:text-zillow-700 hover:underline flex items-center gap-1 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
+                                            View on Map
                                         </button>
                                     </div>
-                                </div>
 
-                                {/* Like / Share Buttons */}
-                                <div className="flex gap-2">
-                                    <button onClick={handleLike} className={`p-3 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${isLiked ? 'text-red-500 border-red-100 bg-red-50' : 'text-zillow-600'}`}>
-                                        <Heart className={isLiked ? "fill-current" : ""} size={24} />
-                                    </button>
-                                    {showLoginTooltip && (
-                                        <div className="absolute mt-14 right-4 z-50 w-48 bg-slate-900 text-white text-xs p-3 rounded-lg shadow-xl animate-fade-in pointer-events-none">
-                                            <div className="absolute -top-1 right-3 w-2 h-2 bg-slate-900 transform rotate-45"></div>
-                                            <p className="font-bold mb-1">Sign in to save</p>
+                                    {/* Premium Icon Stats Row */}
+                                    <div className="grid grid-cols-3 gap-2 md:gap-4">
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
+                                            <BedDouble size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
+                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.bedrooms}</span>
+                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Beds</span>
                                         </div>
-                                    )}
-                                    <button className="p-3 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-zillow-600 transition-colors">
-                                        <Share2 size={24} />
-                                    </button>
+
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
+                                            <Bath size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
+                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.bathrooms}</span>
+                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Baths</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors group cursor-default border border-transparent hover:border-slate-100 dark:hover:border-gray-700">
+                                            <Move size={28} className="text-slate-400 group-hover:text-zillow-600 mb-2 transition-colors" strokeWidth={1.5} />
+                                            <span className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{property.sqft.toLocaleString()}</span>
+                                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-slate-400">Sqft</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -311,57 +359,132 @@ export const PropertyDetailsPage: React.FC = () => {
                                         <div className="font-bold text-lg text-slate-900 dark:text-white hover:underline cursor-pointer" onClick={() => navigate(`/agents/${property.agent.id}`)}>
                                             {property.agent.firstName} {property.agent.lastName}
                                         </div>
-                                        <div className="text-sm text-slate-500">{property.agent.agencyName}</div>
+                                        <div className="text-sm text-slate-500 mb-2">{property.agent.agencyName}</div>
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <Star
+                                                    key={star}
+                                                    size={14}
+                                                    className={`${star <= Math.round(property.agent.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                                                />
+                                            ))}
+                                            <span className="text-xs text-slate-500 ml-1 font-medium">({property.agent.rating || 0})</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {user ? (
-                                    <div className="space-y-3">
-                                        {/* Call Button */}
-                                        <a
-                                            href={`tel:${property.agent.phone}`}
-                                            className="flex items-center justify-center gap-2 w-full py-3 bg-zillow-600 hover:bg-zillow-700 text-white rounded-md font-bold transition-colors shadow-sm"
-                                        >
-                                            <Phone size={20} /> Call Agent
-                                        </a>
-
-                                        {/* WhatsApp Button */}
-                                        <a
-                                            href={`https://wa.me/${property.agent.phone.replace(/[^0-9]/g, '')}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-md font-bold transition-colors shadow-sm"
-                                        >
-                                            <MessageCircle size={20} /> WhatsApp
-                                        </a>
-
-                                        {/* Email Button */}
-                                        <a
-                                            href={`mailto:${property.agent.email}`}
-                                            className="flex items-center justify-center gap-2 w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-md font-bold transition-colors border border-gray-200 dark:border-slate-700"
-                                        >
-                                            <Mail size={20} /> Email Agent
-                                        </a>
-
-                                        {/* Disclaimer */}
-                                        <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg text-xs leading-relaxed text-red-700 dark:text-red-400">
-                                            <div className="flex gap-2 mb-1 font-bold items-center">
-                                                <AlertTriangle size={14} className="shrink-0" />
-                                                <span>SAFETY WARNING</span>
-                                            </div>
-                                            Money must not be sent to any agent without physical inspection of the property and verification of the property documents.
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-                                        <p className="text-slate-600 dark:text-slate-400 mb-4 font-medium">Log in to contact the agent and request tours.</p>
-                                        <Button onClick={() => navigate('/login')} className="w-full max-w-[200px]">Sign In</Button>
-                                    </div>
-                                )}
                             </div>
                         </div>
+
+                        {user ? (
+                            <div className="space-y-3">
+                                {/* Rate Agent Button (New) */}
+                                {user.id !== property.agent.userId && (
+                                    <button
+                                        onClick={() => setIsRatingModalOpen(true)}
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-md font-bold transition-colors shadow-sm mb-3"
+                                    >
+                                        <Star size={20} className="fill-black/20" /> Rate This Agent
+                                    </button>
+                                )}
+
+                                {/* Call Button */}
+                                <a
+                                    href={`tel:${property.agent.phone}`}
+                                    className="flex items-center justify-center gap-2 w-full py-3 bg-zillow-600 hover:bg-zillow-700 text-white rounded-md font-bold transition-colors shadow-sm"
+                                >
+                                    <Phone size={20} /> Call Agent
+                                </a>
+
+                                {/* WhatsApp Button */}
+                                <a
+                                    href={`https://wa.me/${property.agent.phone.replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-md font-bold transition-colors shadow-sm"
+                                >
+                                    <MessageCircle size={20} /> WhatsApp
+                                </a>
+
+                                {/* Email Button */}
+                                <a
+                                    href={`mailto:${property.agent.email}`}
+                                    className="flex items-center justify-center gap-2 w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-md font-bold transition-colors border border-gray-200 dark:border-slate-700"
+                                >
+                                    <Mail size={20} /> Email Agent
+                                </a>
+
+                                {/* Disclaimer */}
+                                <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg text-xs leading-relaxed text-red-700 dark:text-red-400">
+                                    <div className="flex gap-2 mb-1 font-bold items-center">
+                                        <AlertTriangle size={14} className="shrink-0" />
+                                        <span>SAFETY WARNING</span>
+                                    </div>
+                                    Money must not be sent to any agent without physical inspection of the property and verification of the property documents.
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                                <p className="text-slate-600 dark:text-slate-400 mb-4 font-medium">Log in to contact the agent and request tours.</p>
+                                <Button onClick={() => navigate('/login')} className="w-full max-w-[200px]">Sign In</Button>
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {/* RATING MODAL */}
+                {
+                    isRatingModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in duration-200 relative">
+                                <button
+                                    onClick={() => setIsRatingModalOpen(false)}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-500">
+                                        <Star size={32} className="fill-current" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Rate Agent</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                                        How was your experience with {property?.agent?.firstName}?
+                                    </p>
+                                </div>
+
+                                <div className="flex justify-center gap-2 mb-8">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onMouseLeave={() => setHoverRating(0)}
+                                            onClick={() => setRatingValue(star)}
+                                            className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                                        >
+                                            <Star
+                                                size={36}
+                                                className={`${star <= (hoverRating || ratingValue)
+                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                    : 'text-gray-300 dark:text-gray-600'
+                                                    } transition-colors duration-200`}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    onClick={handleSubmitRating}
+                                    disabled={ratingValue === 0}
+                                    className="w-full"
+                                >
+                                    Submit Rating
+                                </Button>
+                            </div>
+                        </div>
+                    )
+                }
             </div>
         </div>
     );

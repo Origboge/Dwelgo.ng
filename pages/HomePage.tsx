@@ -27,17 +27,16 @@ export const HomePage: React.FC = () => {
     const fetchHomeData = async () => {
       setLoading(true);
       try {
-        // Fetch All for Client-side Search (Optimization: In a real app, this would be a dedicated lightweight endpoint)
-        const all = await propertyService.getAllProperties();
-        setAllProperties(all);
+        // Run fetches in parallel so one slow query doesn't block the others
+        const [allRes, featuredRes, latestRes] = await Promise.allSettled([
+          propertyService.getAllProperties({ limit: 100 }), // LIMIT SEARCH TO 100 TO PREVENT TIMEOUT
+          propertyService.getAllProperties({ isFeatured: true, limit: 4 }),
+          propertyService.getAllProperties({ limit: 4 })
+        ]);
 
-        // Fetch Featured (Limit 4)
-        const featured = await propertyService.getAllProperties({ isFeatured: true, limit: 4 });
-        setFeaturedProperties(featured);
-
-        // Fetch Latest (Limit 4)
-        const latest = await propertyService.getAllProperties({ limit: 4 });
-        setLatestProperties(latest);
+        if (allRes.status === 'fulfilled') setAllProperties(allRes.value);
+        if (featuredRes.status === 'fulfilled') setFeaturedProperties(featuredRes.value);
+        if (latestRes.status === 'fulfilled') setLatestProperties(latestRes.value);
       } catch (error) {
         console.error('Failed to load home data', error);
       } finally {
