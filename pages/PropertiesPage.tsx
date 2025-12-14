@@ -60,7 +60,7 @@ export const PropertiesPage: React.FC = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Real Estate & Homes for Sale</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">Find Properties</h1>
           <div className="h-1 w-20 bg-zillow-600 rounded-full"></div>
         </div>
 

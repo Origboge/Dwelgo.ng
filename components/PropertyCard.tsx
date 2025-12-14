@@ -4,6 +4,17 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+// Cloudinary optimization: add responsive sizing and auto-format
+const optimizeCloudinaryUrl = (url: string, width: number = 400): string => {
+  if (!url) return '';
+  // Only transform Cloudinary URLs
+  if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+    // Insert transformation after /upload/
+    return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto/`);
+  }
+  return url;
+};
+
 interface PropertyCardProps {
   property: Property;
 }
@@ -47,8 +58,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
       {/* Image Container */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-gray-800">
         <img
-          src={property.imageUrl}
+          src={optimizeCloudinaryUrl(property.imageUrl, 400)}
           alt={property.title}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 

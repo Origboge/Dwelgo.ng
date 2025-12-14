@@ -7,6 +7,15 @@ import { useAuth } from '../context/AuthContext';
 import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X } from 'lucide-react';
 import { agentService } from '../services/AgentService';
 
+// Cloudinary optimization: add responsive sizing and auto-format
+const optimizeCloudinaryUrl = (url: string, width: number = 800): string => {
+    if (!url) return '';
+    if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+        return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto/`);
+    }
+    return url;
+};
+
 export const PropertyDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -150,9 +159,11 @@ export const PropertyDetailsPage: React.FC = () => {
                         }}
                     >
                         <img
-                            src={[property.imageUrl, ...(property.gallery || [])][currentImageIndex]}
+                            src={optimizeCloudinaryUrl([property.imageUrl, ...(property.gallery || [])][currentImageIndex], 800)}
                             className="w-full h-full object-cover transition-transform duration-500"
                             alt="Property"
+                            loading="eager"
+                            decoding="async"
                         />
                         {/* Mobile Controls */}
                         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 pointer-events-none">
@@ -170,9 +181,11 @@ export const PropertyDetailsPage: React.FC = () => {
                     {/* Main Large Image - Now with Controls */}
                     <div className="col-span-2 row-span-2 relative group cursor-pointer" onClick={() => setCurrentImageIndex(0)}>
                         <img
-                            src={[property.imageUrl, ...(property.gallery || [])][currentImageIndex] || property.imageUrl}
+                            src={optimizeCloudinaryUrl([property.imageUrl, ...(property.gallery || [])][currentImageIndex] || property.imageUrl, 800)}
                             className="w-full h-full object-cover hover:opacity-95 transition-opacity"
                             alt="Main View"
+                            loading="eager"
+                            decoding="async"
                         />
                         <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider shadow-sm text-slate-900 border border-white/50 backdrop-blur-sm">
                             {property.status === 'Sold' ? 'Sold' : (property.listingType === 'Sale' ? 'For Sale' : 'For Rent')}
