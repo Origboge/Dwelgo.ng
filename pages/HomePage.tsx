@@ -128,7 +128,7 @@ export const HomePage: React.FC = () => {
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-linear scale-105 hover:scale-110 z-0"
           style={{
-            backgroundImage: 'url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=80")',
+            backgroundImage: 'url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1280&q=70")',
           }}
         />
         {/* Lighter overlay - subtle flat black to ensure text pops but image is bright */}
@@ -319,7 +319,7 @@ export const HomePage: React.FC = () => {
             </div>
             <div className="h-full min-h-[300px] relative">
               <img
-                src="https://images.unsplash.com/photo-1556155092-490a1ba16284?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+                src="https://images.unsplash.com/photo-1556155092-490a1ba16284?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=70"
                 alt="Agent Dashboard"
                 className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-50 bg-zillow-900"
               />
@@ -370,7 +370,7 @@ export const HomePage: React.FC = () => {
           </div>
           <div className="md:w-1/2 relative h-[350px] w-full rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/50 border border-white/20 group">
             <img
-              src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+              src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=70"
               alt="Advertising Dashboard"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />

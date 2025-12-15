@@ -4,14 +4,43 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-// Cloudinary optimization: add responsive sizing and auto-format
-const optimizeCloudinaryUrl = (url: string, width: number = 400): string => {
+// Image optimization: add responsive sizing and auto-format for Cloudinary and Unsplash
+const optimizeImageUrl = (url: string, width: number = 400): string => {
   if (!url) return '';
-  // Only transform Cloudinary URLs
+
+  // 1. Cloudinary
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
     // Insert transformation after /upload/
     return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto/`);
   }
+
+  // 2. Unsplash (Modify existing query params)
+  if (url.includes('images.unsplash.com')) {
+    // Check if it already has params (it usually does from the seed)
+    if (url.includes('?')) {
+      let newUrl = url;
+      // Replace width
+      if (newUrl.includes('w=')) {
+        newUrl = newUrl.replace(/w=\d+/, `w=${width}`);
+      } else {
+        newUrl += `&w=${width}`;
+      }
+      // Ensure quality is reasonable (80 is good default, 60 is better for thumbs)
+      if (newUrl.includes('q=')) {
+        newUrl = newUrl.replace(/q=\d+/, 'q=75'); // Lower quality slightly for speed
+      } else {
+        newUrl += '&q=75';
+      }
+      // Ensure format is auto
+      if (!newUrl.includes('auto=format')) {
+        newUrl += '&auto=format';
+      }
+      return newUrl;
+    }
+    // No params? Clean append
+    return `${url}?auto=format&fit=crop&w=${width}&q=75`;
+  }
+
   return url;
 };
 
@@ -58,7 +87,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
       {/* Image Container */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-gray-800">
         <img
-          src={optimizeCloudinaryUrl(property.imageUrl, 400)}
+          src={optimizeImageUrl(property.imageUrl, 400)}
           alt={property.title}
           loading="lazy"
           decoding="async"
