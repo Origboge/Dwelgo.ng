@@ -7,9 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X } from 'lucide-react';
 import { agentService } from '../services/AgentService';
 
+// Default placeholder if image is missing
+const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+
 // Cloudinary optimization: add responsive sizing and auto-format
 const optimizeCloudinaryUrl = (url: string, width: number = 800): string => {
-    if (!url) return '';
+    if (!url) return PLACEHOLDER_IMG;
     if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
         return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto/`);
     }

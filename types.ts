@@ -63,7 +63,7 @@ export interface Property {
   agent: Agent;
   features: string[];
   isFeatured?: boolean;
-  status: 'Available' | 'Pending' | 'Sold' | 'Rented';
+  status: 'Available' | 'Pending' | 'Sold' | 'Rented' | 'Archived';
   description: string;
   addedAt: string;
   latitude?: number;

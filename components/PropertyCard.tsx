@@ -5,8 +5,11 @@ import { Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Image optimization: add responsive sizing and auto-format for Cloudinary and Unsplash
+// Default placeholder if image is missing
+const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
+
 const optimizeImageUrl = (url: string, width: number = 400): string => {
-  if (!url) return '';
+  if (!url) return PLACEHOLDER_IMG;
 
   // 1. Cloudinary
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {

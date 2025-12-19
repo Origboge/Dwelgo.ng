@@ -108,9 +108,9 @@ class PropertyService {
                 return all.map((p: any) => this.mapBackendProperty(p));
             }
 
-            const params: any = {};
+            // For public view, fetch ACTIVE listings
+            const params: any = { status: 'active', limit: 50 };
             if (agentId) params.agentId = agentId;
-
             const response = await api.get('/properties', { params });
             const all = response.data.data || [];
             return all.map((p: any) => this.mapBackendProperty(p));

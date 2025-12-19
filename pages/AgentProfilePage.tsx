@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { uploadService } from '../services/UploadService';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { PROPERTY_TYPES } from '../constants';
 import { Property } from '../types';
@@ -78,7 +79,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const locationInfo = useLocation();
     const queryParams = new URLSearchParams(locationInfo.search);
     const initialTab = queryParams.get('tab') === 'likes' ? 'likes' : 'listings';
-    const [activeTab, setActiveTab] = useState<'listings' | 'likes'>(initialTab);
+    const [activeTab, setActiveTab] = useState<'listings' | 'likes' | 'sold' | 'archived'>(initialTab as any);
 
     // Profile Form State
     const [profileForm, setProfileForm] = useState({
@@ -112,10 +113,11 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     });
 
     const [currentFeature, setCurrentFeature] = useState('');
-    const [mediaPreviews, setMediaPreviews] = useState<{ images: string[], video: string | null }>({
-        images: [],
-        video: null
-    });
+    // Unified Image Management
+    type ImageItem = { id: string; url: string; file?: File; isNew: boolean };
+    const [propertyImages, setPropertyImages] = useState<ImageItem[]>([]);
+    const [videoPreview, setVideoPreview] = useState<string | null>(null);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     // Track if we are in "Relist" mode to force status change
@@ -124,7 +126,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     // Check if the current user is the owner of this agent profile
     // agent.userId might be an object (populated) or a string (ID) depending on API response
     const agentUserId = typeof agent?.userId === 'object' ? (agent.userId as any)._id || (agent.userId as any).id : agent?.userId;
-    const isOwner = user?.role === 'agent' && user?.id === agentUserId;
+    const isOwner = !!user && !!agentUserId && String(user.id) === String(agentUserId);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -158,10 +160,20 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             title: property.title, description: property.description, price: property.price.toString(), priceFrequency: property.priceFrequency || 'Year',
             address: property.address, city: property.city, state: property.state, type: property.type, listingType: property.listingType,
             bedrooms: property.bedrooms?.toString() || '', bathrooms: property.bathrooms?.toString() || '', sqft: property.sqft.toString(),
-            plots: property.plots?.toString() || '', featuresList: property.features || [], imageUrl: property.imageUrl,
+            plots: property.plots?.toString() || '', featuresList: property.features || [],
+            imageUrl: property.imageUrl,
             latitude: property.latitude?.toString() || '', longitude: property.longitude?.toString() || ''
         });
-        setMediaPreviews({ images: property.gallery || [property.imageUrl], video: property.videoUrls?.[0] || null });
+
+        // Populate images (All existing)
+        const initialImages = (property.gallery || [property.imageUrl]).map((url, idx) => ({
+            id: `existing-${idx}`,
+            url,
+            isNew: false
+        }));
+        setPropertyImages(initialImages);
+        setVideoPreview(property.videoUrls?.[0] || null);
+        setVideoFile(null);
     };
 
     // Derived State
@@ -223,17 +235,22 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            // REMOVED: Max 4 images check
             const oversized = Array.from(files).some((file: any) => file.size > 10 * 1024 * 1024);
             if (oversized) {
                 showToast("Some images are too large. Please select images under 10MB.", 'error');
                 e.target.value = '';
                 return;
             }
+
             Array.from(files).forEach((file: any) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    setMediaPreviews(prev => ({ ...prev, images: [...prev.images, reader.result as string] }));
+                    setPropertyImages(prev => [...prev, {
+                        id: `new-${Date.now()}-${Math.random()}`,
+                        url: reader.result as string, // Preview URL (Base64)
+                        file: file,
+                        isNew: true
+                    }]);
                 };
                 reader.readAsDataURL(file as Blob);
             });
@@ -241,16 +258,13 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         }
     };
 
-    const handleRemoveImage = (index: number) => {
-        setMediaPreviews(prev => ({
-            ...prev,
-            images: prev.images.filter((_, i) => i !== index)
-        }));
+    const handleRemoveImage = (id: string) => {
+        setPropertyImages(prev => prev.filter(item => item.id !== id));
     };
 
     const handleRemoveVideo = () => {
-        setMediaPreviews(prev => ({ ...prev, video: null }));
-        // Also clear the file input if possible, but state is enough for preview
+        setVideoPreview(null);
+        setVideoFile(null);
     };
 
     const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,7 +277,8 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             }
             const reader = new FileReader();
             reader.onloadend = () => {
-                setMediaPreviews(prev => ({ ...prev, video: reader.result as string }));
+                setVideoPreview(reader.result as string);
+                setVideoFile(file);
             };
             reader.readAsDataURL(file);
             if (errors.video) setErrors(prev => ({ ...prev, video: '' }));
@@ -305,22 +320,26 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             if (!formData.plots) newErrors.plots = "Number of Plots is required";
         }
 
-        if (mediaPreviews.images.length === 0) newErrors.images = "At least one image is required";
-        if (!mediaPreviews.video) newErrors.video = "A video tour is required";
+        if (propertyImages.length === 0) newErrors.images = "At least one image is required";
+        if (!videoPreview) newErrors.video = "A video tour is required";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handlePublish = (e: React.FormEvent) => {
+    const handlePublish = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
 
         setIsSubmitting(true);
 
+        const originalProp = agentProperties.find(p => p.id === editingId);
+
         const newProperty: Property = {
             id: editingId || `p-${Date.now()}`,
             title: formData.title,
+            description: formData.description,
+            addedAt: originalProp?.addedAt || new Date().toISOString(),
             address: formData.address,
             city: formData.city,
             state: formData.state,
@@ -330,9 +349,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             bedrooms: Number(formData.bedrooms) || 0,
             bathrooms: Number(formData.bathrooms) || 0,
             sqft: Number(formData.sqft),
-            imageUrl: mediaPreviews.images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80',
-            gallery: mediaPreviews.images,
-            videoUrls: mediaPreviews.video ? [mediaPreviews.video] : [],
+            imageUrl: propertyImages.length > 0 ? propertyImages[0].url : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80',
+            gallery: propertyImages.map(img => img.url),
+            videoUrls: videoPreview ? [videoPreview] : [],
             agent: agent!,
             features: formData.featuresList && formData.featuresList.length > 0
                 ? formData.featuresList
@@ -360,42 +379,69 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         };
 
         // Fix status logic
-        const originalProp = agentProperties.find(p => p.id === editingId);
         if (editingId && originalProp && !isRelisting) {
             newProperty.status = originalProp.status; // Preserve original status
         } else {
             newProperty.status = 'Available'; // Default for new or Relist
         }
 
-        setTimeout(async () => {
-            try {
-                if (editingId) {
-                    await propertyService.updateProperty(newProperty.id, newProperty);
-                } else {
-                    await propertyService.createProperty(newProperty);
+        // UPLOAD LOGIC
+        // 1. Upload new images
+        let finalGallery: string[] = [];
+        try {
+            // Process images: if isNew -> upload, else -> keep url
+            const uploadPromises = propertyImages.map(async (img) => {
+                if (img.isNew && img.file) {
+                    const uploadedUrls = await uploadService.uploadFiles([img.file]);
+                    return uploadedUrls[0];
                 }
-                setIsSubmitting(false);
-                setShowAddForm(false);
-                setShowSuccessModal(true);
-                setMediaPreviews({ images: [], video: null });
-                setFormData({
-                    title: '', description: '', price: '', priceFrequency: 'Year', address: '', city: '', state: '',
-                    type: 'House', listingType: 'Sale', bedrooms: '', bathrooms: '', sqft: '', plots: '',
-                    featuresList: [], imageUrl: '', latitude: '', longitude: ''
-                });
-                setEditingId(null);
-                setIsRelisting(false); // Reset
-                setRefreshTrigger(prev => prev + 1);
-            } catch (error: any) {
-                console.error(error);
-                setIsSubmitting(false);
-                if (error.name === 'QuotaExceededError' || error.message?.includes('QuotaExceededError')) {
-                    showToast("Storage Full! You have uploaded too many high-resolution images.", 'error');
-                } else {
-                    showToast(error.response?.data?.message || "Failed to save property. Please try again.", 'error');
-                }
+                return img.url;
+            });
+            finalGallery = await Promise.all(uploadPromises);
+
+            // 2. Upload video if new
+            let finalVideoUrl = videoPreview;
+            if (videoFile) {
+                // Assuming we use uploadFiles for video too or a specific method
+                const uploadedVideos = await uploadService.uploadFiles([videoFile], 'property-lease/videos');
+                finalVideoUrl = uploadedVideos[0];
             }
-        }, 1000);
+
+            // Update property object with verified URLs
+            newProperty.gallery = finalGallery;
+            newProperty.imageUrl = finalGallery[0] || newProperty.imageUrl;
+            newProperty.videoUrls = finalVideoUrl ? [finalVideoUrl] : [];
+
+            if (editingId) {
+                await propertyService.updateProperty(newProperty.id, newProperty);
+            } else {
+                await propertyService.createProperty(newProperty);
+            }
+
+            setIsSubmitting(false);
+            setShowAddForm(false);
+            setShowSuccessModal(true);
+            setPropertyImages([]);
+            setVideoPreview(null);
+            setVideoFile(null);
+            setFormData({
+                title: '', description: '', price: '', priceFrequency: 'Year', address: '', city: '', state: '',
+                type: 'House', listingType: 'Sale', bedrooms: '', bathrooms: '', sqft: '', plots: '',
+                featuresList: [], imageUrl: '', latitude: '', longitude: ''
+            });
+            setEditingId(null);
+            setIsRelisting(false); // Reset
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error: any) {
+            console.error(error);
+            setIsSubmitting(false);
+            if (error.name === 'QuotaExceededError' || error.message?.includes('QuotaExceededError')) {
+                showToast("Storage Full! You have uploaded too many high-resolution images.", 'error');
+            } else {
+                showToast(error.response?.data?.message || error.message || "Failed to save property.", 'error');
+            }
+        }
+        // Removed setTimeout to allow async/await to work propery
     };
 
     // Avatar File Input Ref
@@ -408,25 +454,27 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 showToast("Image is too large. Please select an image under 10MB.", 'error');
                 return;
             }
+            handleUploadAvatar(file);
+        }
+    };
+
+    const handleUploadAvatar = async (file: File) => {
+        try {
+            // Preview first
             const reader = new FileReader();
-            reader.onloadend = async () => {
-                const result = reader.result as string;
-                const previousAvatar = agent?.avatar;
-
-                // Optimistic update
-                if (agent) setAgent({ ...agent, avatar: result });
-
-                try {
-                    await updateProfile({ avatar: result });
-                    showToast("Profile picture updated!", 'success');
-                } catch (error) {
-                    console.error("Failed to update profile", error);
-                    // Revert optimistic update
-                    if (agent) setAgent({ ...agent, avatar: previousAvatar || '' });
-                    showToast("Failed to save profile picture. Please try again.", 'error');
+            reader.onload = (e) => {
+                if (agent && e.target?.result) {
+                    setAgent({ ...agent, avatar: e.target.result as string });
                 }
             };
             reader.readAsDataURL(file);
+
+            const uploadedUrl = await uploadService.uploadSingle(file, 'property-lease/avatars');
+            await updateProfile({ avatar: uploadedUrl });
+            showToast("Profile picture updated!", 'success');
+        } catch (error: any) {
+            console.error("Avatar upload failed", error);
+            showToast("Failed to upload avatar", 'error');
         }
     };
 
@@ -644,12 +692,12 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     setRefreshTrigger(prev => prev + 1);
                                                     showToast('Property deleted successfully', 'success');
                                                 } else if (actionModal.type === 'mark_sold') {
-                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'sold' });
+                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'Sold' });
                                                     setRefreshTrigger(prev => prev + 1);
                                                     setShowSoldOverlay(true);
                                                     setTimeout(() => setShowSoldOverlay(false), 3000);
                                                 } else if (actionModal.type === 'archive') {
-                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'archived' });
+                                                    await propertyService.updateProperty(actionModal.propertyId, { status: 'Archived' });
                                                     setRefreshTrigger(prev => prev + 1);
                                                     showToast('Property Archived (Hidden)', 'success');
                                                 } else if (actionModal.type === 'edit' || actionModal.type === 'relist') {
@@ -822,28 +870,51 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     </div>
                                     <Building2 size={240} className="absolute -right-12 -bottom-16 text-white/5 rotate-12" />
                                 </div>
+                            </div>
+                        )}
 
-                                {/* Tabs */}
-                                <div className="flex gap-6 border-b border-gray-200 dark:border-gray-800 mb-8">
+                        {/* Tabs - Now visible to everyone to allow "Sold" exploration */}
+                        <div className="flex flex-wrap gap-4 md:gap-8 border-b border-gray-200 dark:border-gray-800 mb-8 overflow-x-auto">
+                            <button
+                                onClick={() => setActiveTab('listings')}
+                                className={`pb-3 font-bold text-sm transition-colors relative whitespace-nowrap ${activeTab === 'listings' ? 'text-zillow-600 dark:text-zillow-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                            >
+                                {isOwner ? 'My Listings' : 'Current Listings'}
+                                {activeTab === 'listings' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zillow-600 dark:bg-zillow-400"></div>}
+                            </button>
+
+                            {isOwner && (
+                                <>
                                     <button
-                                        onClick={() => setActiveTab('listings')}
-                                        className={`pb-3 font-bold text-sm transition-colors relative ${activeTab === 'listings' ? 'text-zillow-600 dark:text-zillow-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                        onClick={() => setActiveTab('sold')}
+                                        className={`pb-3 font-bold text-sm transition-colors relative whitespace-nowrap ${activeTab === 'sold' ? 'text-zillow-600 dark:text-zillow-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                                     >
-                                        My Listings
-                                        {activeTab === 'listings' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zillow-600 dark:bg-zillow-400"></div>}
+                                        Sold
+                                        {soldListings.length > 0 && <span className="ml-1.5 text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{soldListings.length}</span>}
+                                        {activeTab === 'sold' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zillow-600 dark:bg-zillow-400"></div>}
                                     </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('archived')}
+                                        className={`pb-3 font-bold text-sm transition-colors relative whitespace-nowrap ${activeTab === 'archived' ? 'text-zillow-600 dark:text-zillow-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                    >
+                                        Archived
+                                        <span className="ml-1.5 text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{archivedListings.length}</span>
+                                        {activeTab === 'archived' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zillow-600 dark:bg-zillow-400"></div>}
+                                    </button>
+
                                     <button
                                         onClick={() => setActiveTab('likes')}
-                                        className={`pb-3 font-bold text-sm transition-colors relative ${activeTab === 'listings' ? 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200' : 'text-zillow-600 dark:text-zillow-400'}`}
+                                        className={`pb-3 font-bold text-sm transition-colors relative whitespace-nowrap ${activeTab === 'likes' ? 'text-zillow-600 dark:text-zillow-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                                     >
                                         My Likes
                                         {activeTab === 'likes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zillow-600 dark:bg-zillow-400"></div>}
                                     </button>
-                                </div>
-                            </div>
-                        )}
+                                </>
+                            )}
+                        </div>
 
-                        {isOwner && activeTab === 'likes' ? (
+                        {isOwner && activeTab === 'likes' && (
                             <div className="space-y-6">
                                 {likedProperties.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -860,7 +931,76 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        )}
+
+                        {activeTab === 'sold' && (
+                            <div className="animate-fade-in">
+                                {soldListings.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {soldListings.map(property => (
+                                            <div key={property.id} className="relative group grayscale hover:grayscale-0 transition-all">
+                                                <PropertyCard property={property} />
+                                                {isOwner && (
+                                                    <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                                                        <button onClick={() => {
+                                                            setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
+                                                        }} className="bg-green-600 text-white border-green-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-green-700 hover:scale-105 transition-all">
+                                                            Relist Property
+                                                        </button>
+                                                        <button onClick={() => {
+                                                            setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
+                                                        }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white font-black text-xl px-6 py-2 rounded-lg -rotate-12 shadow-xl border-2 border-white pointer-events-none">
+                                                    SOLD
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-16 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                        <DollarSign className="mx-auto text-gray-300 mb-4" size={48} />
+                                        <p className="text-slate-500 font-medium">No sold properties yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {isOwner && activeTab === 'archived' && (
+                            <div className="animate-fade-in">
+                                {archivedListings.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {archivedListings.map(property => (
+                                            <div key={property.id} className="relative group">
+                                                <PropertyCard property={property} />
+                                                <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[1px] rounded-xl pointer-events-none"></div>
+                                                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                                                    <button onClick={() => {
+                                                        setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
+                                                    }} className="bg-blue-600 text-white border-blue-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-blue-700 hover:scale-105 transition-all">
+                                                        Unarchive (Relist)
+                                                    </button>
+                                                    <button onClick={() => {
+                                                        setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
+                                                    }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
+                                                </div>
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-800 text-white font-bold text-lg px-6 py-2 rounded-lg shadow-xl border border-slate-600 pointer-events-none">
+                                                    ARCHIVED
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-16 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                        <Lock className="mx-auto text-gray-300 mb-4" size={48} />
+                                        <p className="text-slate-500 font-medium">No archived properties.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'listings' && (
                             <>
                                 {showAddForm && (
                                     <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800 animate-slide-up shadow-xl mb-8 relative">
@@ -945,14 +1085,14 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                         <p className={`text-sm ${errors.images ? 'text-red-600' : 'text-slate-500'}`}>Drag & drop or click to upload photos</p>
                                                     </div>
                                                     {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
-                                                    {mediaPreviews.images.length > 0 && (
+                                                    {propertyImages.length > 0 && (
                                                         <div className="mt-4 grid grid-cols-4 gap-2">
-                                                            {mediaPreviews.images.map((img, idx) => (
+                                                            {propertyImages.map((img, idx) => (
                                                                 <div key={idx} className="relative aspect-square rounded overflow-hidden border border-gray-200 group">
-                                                                    <img src={img} alt="Preview" className="w-full h-full object-cover" />
+                                                                    <img src={img.url} alt="Preview" className="w-full h-full object-cover" />
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => handleRemoveImage(idx)}
+                                                                        onClick={() => handleRemoveImage(img.id)}
                                                                         className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 hover:scale-110"
                                                                         title="Remove Image"
                                                                     >
@@ -972,9 +1112,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                         <p className={`text-sm ${errors.video ? 'text-red-600' : 'text-slate-500'}`}>Upload a video tour</p>
                                                     </div>
                                                     {errors.video && <p className="text-red-500 text-xs mt-1">{errors.video}</p>}
-                                                    {mediaPreviews.video && (
+                                                    {videoPreview && (
                                                         <div className="mt-4 relative group rounded overflow-hidden">
-                                                            <video src={mediaPreviews.video} controls className="w-full h-48 rounded bg-black" />
+                                                            <video src={videoPreview} controls className="w-full h-48 rounded bg-black" />
                                                             <button
                                                                 type="button"
                                                                 onClick={handleRemoveVideo}
@@ -1152,79 +1292,6 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     )}
                                 </div>
 
-                                {/* Sold / Archived Listings Section */}
-                                {soldListings.length > 0 && (
-                                    <div className="animate-fade-in">
-                                        <div className="mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
-                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                Sold Listings <span className="text-sm font-normal text-slate-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{soldListings.length}</span>
-                                            </h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-75 hover:opacity-100 transition-opacity">
-                                            {soldListings.map(property => (
-                                                <div key={property.id} className="relative group grayscale hover:grayscale-0 transition-all">
-                                                    <PropertyCard property={property} />
-                                                    {isOwner && (
-                                                        <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                                                            {/* Relist Button */}
-                                                            <button onClick={() => {
-                                                                setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
-                                                            }} className="bg-green-600 text-white border-green-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-green-700 hover:scale-105 transition-all">
-                                                                Relist Property
-                                                            </button>
-
-                                                            <button onClick={() => {
-                                                                setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
-                                                            }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
-                                                        </div>
-                                                    )}
-                                                    {/* Sold Badge Overlay */}
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white font-black text-xl px-6 py-2 rounded-lg -rotate-12 shadow-xl border-2 border-white pointer-events-none">
-                                                        SOLD
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Archived Listings Section */}
-                                {archivedListings.length > 0 && isOwner && (
-                                    <div className="mt-12 animate-fade-in">
-                                        <div className="mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
-                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                Archived Listings <span className="text-sm font-normal text-slate-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{archivedListings.length}</span>
-                                            </h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60 hover:opacity-100 transition-opacity">
-                                            {archivedListings.map(property => (
-                                                <div key={property.id} className="relative group">
-                                                    <PropertyCard property={property} />
-                                                    {/* Archived Overlay */}
-                                                    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[1px] rounded-xl pointer-events-none"></div>
-
-                                                    <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                                                        <button onClick={() => {
-                                                            setActionModal({ visible: true, type: 'relist', propertyId: property.id, propertyTitle: property.title });
-                                                        }} className="bg-blue-600 text-white border-blue-700 text-xs font-bold px-3 py-1 rounded shadow-md border hover:bg-blue-700 hover:scale-105 transition-all">
-                                                            Unarchive (Relist)
-                                                        </button>
-
-                                                        <button onClick={() => {
-                                                            setActionModal({ visible: true, type: 'delete', propertyId: property.id, propertyTitle: property.title });
-                                                        }} className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded shadow-md border border-red-600 hover:bg-red-600 hover:scale-105 transition-all">Delete</button>
-                                                    </div>
-
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-800 text-white font-bold text-lg px-6 py-2 rounded-lg shadow-xl border border-slate-600 pointer-events-none">
-                                                        ARCHIVED
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-
                                 {/* SOLD OVERLAY POPUP */}
                                 {showSoldOverlay && (
                                     <div className="fixed inset-0 z-[150] flex items-center justify-center pointer-events-none">
@@ -1240,12 +1307,11 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                         </div>
                                     </div>
                                 )}
-
                             </>
                         )}
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
