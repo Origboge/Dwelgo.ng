@@ -14,6 +14,18 @@ class PropertyService {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
+        // Robustly extract sqft/area
+        let extractedSqft = 0;
+        if (p.area && typeof p.area.value === 'number') {
+            extractedSqft = p.area.value;
+        } else if (typeof p.area === 'number') {
+            extractedSqft = p.area;
+        } else if (typeof p.sqft === 'number') {
+            extractedSqft = p.sqft;
+        } else if (p.sqft && !isNaN(Number(p.sqft))) { // Handle string numbers if any
+            extractedSqft = Number(p.sqft);
+        }
+
         return {
             id: p._id,
             title: p.title,
@@ -24,9 +36,9 @@ class PropertyService {
             price: p.price,
             type: p.propertyType ? p.propertyType.charAt(0).toUpperCase() + p.propertyType.slice(1) : 'House',
             listingType: p.listingType ? p.listingType.charAt(0).toUpperCase() + p.listingType.slice(1) : 'Sale',
-            bedrooms: p.bedrooms,
-            bathrooms: p.bathrooms,
-            sqft: p.area?.value || p.area || p.sqft,
+            bedrooms: p.bedrooms || 0,
+            bathrooms: p.bathrooms || 0,
+            sqft: extractedSqft,
             imageUrl: p.images?.[0]?.url || p.images?.[0] || '',
             gallery: p.images?.map((img: any) => img.url || img) || [],
             videoUrls: p.videoUrls || [],
@@ -47,7 +59,7 @@ class PropertyService {
             latitude: p.location?.coordinates?.[1] || p.latitude,
             longitude: p.location?.coordinates?.[0] || p.longitude,
             priceFrequency: p.priceFrequency,
-            plots: p.plots,
+            plots: p.plots || 0,
             isFeatured: p.isFeatured
         };
     }
