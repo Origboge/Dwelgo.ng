@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Building2, Mail, Lock, User, Briefcase } from 'lucide-react';
+import { Building2, Mail, Lock, User, Briefcase, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'user' | 'agent'>('user');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -144,11 +145,16 @@ export const LoginPage: React.FC = () => {
 
             <Input
               label="Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               icon={<Lock size={18} />}
+              rightIcon={
+                <div onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </div>
+              }
               required
             />
 

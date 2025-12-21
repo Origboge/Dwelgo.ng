@@ -11,9 +11,9 @@ import { Input } from '../components/Input';
 import { useAuth } from '../context/AuthContext';
 import {
     Phone, Mail, MapPin, Award, Star, Globe, Linkedin, Twitter, Instagram, ShieldCheck,
-    ArrowLeft, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
+    ArrowLeft, ArrowRight, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
     DollarSign, Home, CheckSquare, Maximize, BarChart3, Users, MousePointerClick, Crosshair, MessageCircle, Camera,
-    CheckCircle2, AlertTriangle, Edit, BadgeCheck
+    CheckCircle2, AlertTriangle, Edit, BadgeCheck, Trash2
 } from 'lucide-react';
 import { Agent } from '../types';
 import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
@@ -24,7 +24,7 @@ interface AgentProfilePageProps {
 
 export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: propAgentId }) => {
     const { id: paramId } = useParams<{ id: string }>();
-    const { user, updateProfile } = useAuth();
+    const { user, updateProfile, deleteAccount } = useAuth();
 
     // Determine the ID to use: Prop > URL Param > User ID (if user is agent)
     // If used in Dashboard, propAgentId will be passed.
@@ -35,10 +35,11 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const navigate = useNavigate();
 
     // Data State
-    const [agent, setAgent] = useState<Agent | undefined>(undefined);
+    const [agent, setAgent] = useState<Agent | null>(null);
     const [agentProperties, setAgentProperties] = useState<Property[]>([]);
     const [likedProperties, setLikedProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // UI State
     const [showAddForm, setShowAddForm] = useState(false);
@@ -264,6 +265,16 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         setPropertyImages(prev => prev.filter(item => item.id !== id));
     };
 
+    const handleMoveImage = (index: number, direction: 'left' | 'right') => {
+        if (direction === 'left' && index === 0) return;
+        if (direction === 'right' && index === propertyImages.length - 1) return;
+
+        const newImages = [...propertyImages];
+        const targetIndex = direction === 'left' ? index - 1 : index + 1;
+        [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
+        setPropertyImages(newImages);
+    };
+
     const handleRemoveVideo = () => {
         setVideoPreview(null);
         setVideoFile(null);
@@ -326,12 +337,31 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         if (!videoPreview) newErrors.video = "A video tour is required";
 
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+
+        // Return first error field name if any
+        const errorFields = Object.keys(newErrors);
+        return errorFields.length > 0 ? errorFields[0] : null;
     };
 
     const handlePublish = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        const firstErrorField = validateForm();
+        if (firstErrorField) {
+            // Scroll to the error
+            const element = document.getElementsByName(firstErrorField)[0];
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (element as HTMLElement).focus();
+            } else if (firstErrorField === 'images' || firstErrorField === 'video') {
+                // Special handling for file uploads which might not have name attr on visible container
+                const errorElements = document.querySelectorAll('.border-red-500');
+                if (errorElements.length > 0) {
+                    errorElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+            showToast("Please fix the highlighted errors", "error");
+            return;
+        }
 
         setIsSubmitting(true);
 
@@ -467,6 +497,21 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 return;
             }
             handleUploadAvatar(file);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsSubmitting(true);
+        setShowDeleteConfirm(false);
+        try {
+            await deleteAccount();
+            showToast("Account deleted successfully.", 'success');
+            window.location.href = '#/';
+        } catch (error) {
+            console.error("Delete account error", error);
+            showToast("Failed to delete account.", 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -901,6 +946,49 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                         {isEditingProfile ? <CheckCircle2 size={16} /> : <Edit size={16} />}
                                         {isEditingProfile ? 'Save Changes' : 'Edit Info'}
                                     </button>
+                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="w-full flex items-center justify-center gap-2 py-3 px-4 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors font-bold text-sm"
+                                        >
+                                            <Trash2 size={16} /> Delete My Agent Account
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Delete Confirmation Modal */}
+                            {showDeleteConfirm && (
+                                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 scale-in-center overflow-hidden relative">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
+                                        <div className="flex items-start justify-between mb-4 text-left">
+                                            <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl">
+                                                <AlertTriangle size={24} />
+                                            </div>
+                                            <button onClick={() => setShowDeleteConfirm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight text-left">Delete Account?</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed text-left">
+                                            This action is <span className="text-red-600 font-bold">permanent</span>. All your property listings, client info, and data will be <span className="text-red-600 font-bold italic underline">permanently deleted</span>.
+                                        </p>
+                                        <div className="flex flex-col gap-3">
+                                            <button
+                                                onClick={handleDeleteAccount}
+                                                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Trash2 size={18} /> YES, DELETE EVERYTHING
+                                            </button>
+                                            <button
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                                className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold rounded-xl transition-colors"
+                                            >
+                                                CANCEL
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex gap-6 text-slate-400 justify-center">
@@ -1152,18 +1240,52 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     </div>
                                                     {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                                                     {propertyImages.length > 0 && (
-                                                        <div className="mt-4 grid grid-cols-4 gap-2">
+                                                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                                                             {propertyImages.map((img, idx) => (
-                                                                <div key={idx} className="relative aspect-square rounded overflow-hidden border border-gray-200 group">
+                                                                <div key={idx} className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${idx === 0 ? 'border-blue-600 shadow-lg ring-2 ring-blue-600/20' : 'border-gray-200 dark:border-gray-800'}`}>
                                                                     <img src={img.url} alt="Preview" className="w-full h-full object-cover" />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleRemoveImage(img.id)}
-                                                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md opacity-100 transition-opacity hover:bg-red-700 hover:scale-110 z-10"
-                                                                        title="Remove Image"
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
+
+                                                                    {/* Cover Badge */}
+                                                                    {idx === 0 && (
+                                                                        <div className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10 flex items-center gap-1 uppercase tracking-wider">
+                                                                            <Star size={10} className="fill-white" /> Cover Photo
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Controls Overlay */}
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleMoveImage(idx, 'left')}
+                                                                            className={`bg-white/90 text-slate-900 rounded-full p-1.5 hover:bg-white transition-colors shadow-lg ${idx === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                            title="Move Forward"
+                                                                            disabled={idx === 0}
+                                                                        >
+                                                                            <ArrowLeft size={16} />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRemoveImage(img.id)}
+                                                                            className="bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors shadow-lg"
+                                                                            title="Delete Image"
+                                                                        >
+                                                                            <X size={20} />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleMoveImage(idx, 'right')}
+                                                                            className={`bg-white/90 text-slate-900 rounded-full p-1.5 hover:bg-white transition-colors shadow-lg ${idx === propertyImages.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                            title="Move Backward"
+                                                                            disabled={idx === propertyImages.length - 1}
+                                                                        >
+                                                                            <ArrowRight size={16} />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Index indicator */}
+                                                                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm font-bold">
+                                                                        {idx + 1}
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>

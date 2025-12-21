@@ -4,14 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { propertyService } from '../services/PropertyService';
 import { PropertyCard } from '../components/PropertyCard';
 import { Button } from '../components/Button';
-import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard } from 'lucide-react';
+import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard, Trash2, AlertTriangle, X } from 'lucide-react';
 import { Property } from '../types';
 
 import { AgentProfilePage } from './AgentProfilePage';
 
 export const UserDashboardPage: React.FC = () => {
-    const { user, updateProfile } = useAuth();
+    const { user, updateProfile, deleteAccount } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
     const [savedProperties, setSavedProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
@@ -89,6 +90,22 @@ export const UserDashboardPage: React.FC = () => {
                 }
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsSubmitting(true);
+        setShowDeleteConfirm(false);
+        try {
+            await deleteAccount();
+            showToast("Account deleted successfully. We're sorry to see you go.", 'success');
+            // AuthContext will handle state, but ensure we redirect or let it happen
+            window.location.href = '#/';
+        } catch (error) {
+            console.error("Delete account error", error);
+            showToast("Failed to delete account. Please try again.", 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -212,9 +229,53 @@ export const UserDashboardPage: React.FC = () => {
                                         </Button>
                                     </div>
                                 )}
+
+                                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 w-full">
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors font-bold text-sm"
+                                    >
+                                        <Trash2 size={16} /> Delete Account Permanently
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Delete Confirmation Modal */}
+                    {showDeleteConfirm && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 scale-in-center overflow-hidden relative">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl">
+                                        <AlertTriangle size={24} />
+                                    </div>
+                                    <button onClick={() => setShowDeleteConfirm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Delete Account?</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+                                    This action is <span className="text-red-600 font-bold">permanent</span> and cannot be undone. All your saved properties and profile information will be lost.
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleDeleteAccount}
+                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 size={18} /> YES, DELETE ACCOUNT
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold rounded-xl transition-colors"
+                                    >
+                                        CANCEL
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Main Content Area */}
                     <div className="lg:w-2/3">

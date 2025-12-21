@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2 } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [role, setRole] = useState<'user' | 'agent'>('user');
@@ -18,6 +18,8 @@ export const RegisterPage: React.FC = () => {
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,6 +54,17 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    const phoneRegex = /^(?:\+234|0)[789]\d{9}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError('Please provide a valid Nigerian phone number (e.g. 080... or +234...)');
+      return;
+    }
+
     if (role === 'agent' && !formData.agencyName) {
       setError('Agency Name is required for agents');
       return;
@@ -61,15 +74,21 @@ export const RegisterPage: React.FC = () => {
       setError('You must accept the Terms and Conditions to sign up.');
       return;
     }
-
     try {
       await register({
         ...formData,
         role
       });
       navigate('/');
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    } catch (err: any) {
+      const backendError = err.response?.data?.message;
+      if (backendError === 'Email already registered') {
+        setError('This email is already in use. Try signing in or use another email.');
+      } else if (backendError) {
+        setError(backendError);
+      } else {
+        setError('Registration failed. Please check your connection or try again.');
+      }
     }
   };
 
@@ -96,7 +115,7 @@ export const RegisterPage: React.FC = () => {
         />
         <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-12 text-center">
           <h2 className="text-4xl font-bold mb-6">Find your place.</h2>
-          <p className="text-lg text-gray-200">Join millions of people finding their next home on PropertyHub.</p>
+          <p className="text-lg text-gray-200">Join millions of people finding their next home on Dwelgo.ng.</p>
         </div>
       </div>
 
@@ -149,6 +168,7 @@ export const RegisterPage: React.FC = () => {
                 value={formData.firstName}
                 onChange={handleChange}
                 placeholder="First Name"
+                icon={<UserIcon size={18} />}
                 required
               />
               <Input
@@ -157,6 +177,7 @@ export const RegisterPage: React.FC = () => {
                 value={formData.lastName}
                 onChange={handleChange}
                 placeholder="Last Name"
+                icon={<UserIcon size={18} />}
                 required
               />
             </div>
@@ -168,6 +189,7 @@ export const RegisterPage: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="Email address"
+              icon={<Mail size={18} />}
               required
             />
 
@@ -178,6 +200,7 @@ export const RegisterPage: React.FC = () => {
               value={formData.phone}
               onChange={handleChange}
               placeholder="Phone number"
+              icon={<Phone size={18} />}
             />
 
             {role === 'agent' && (
@@ -188,6 +211,7 @@ export const RegisterPage: React.FC = () => {
                   value={formData.agencyName}
                   onChange={handleChange}
                   placeholder="e.g. Century 21"
+                  icon={<Building size={18} />}
                 />
               </div>
             )}
@@ -195,21 +219,33 @@ export const RegisterPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Create password"
+                placeholder="Min 6 characters"
                 required
+                icon={<Lock size={18} />}
+                rightIcon={
+                  <div onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </div>
+                }
               />
               <Input
                 label="Confirm"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm password"
+                placeholder="Repeat password"
                 required
+                icon={<Lock size={18} />}
+                rightIcon={
+                  <div onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </div>
+                }
               />
             </div>
 

@@ -14,7 +14,7 @@ export const TermsPage: React.FC = () => {
                 <div className="space-y-8 text-slate-700 dark:text-slate-300 leading-relaxed">
                     <section>
                         <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">1. Introduction</h2>
-                        <p>Welcome to PropertyHub. By accessing our website and using our services, you agree to be bound by these Terms and Conditions. Please read them carefully.</p>
+                        <p>Welcome to Dwelgo.ng. By accessing our website and using our services, you agree to be bound by these Terms and Conditions. Please read them carefully.</p>
                     </section>
 
                     <section>
@@ -24,7 +24,7 @@ export const TermsPage: React.FC = () => {
 
                     <section>
                         <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">3. Property Listings</h2>
-                        <p>Agents are responsible for the accuracy of their property listings. PropertyHub does not guarantee the accuracy, completeness, or reliability of any listing information.</p>
+                        <p>Agents are responsible for the accuracy of their property listings. Dwelgo.ng does not guarantee the accuracy, completeness, or reliability of any listing information.</p>
                     </section>
 
                     <section>
@@ -34,7 +34,7 @@ export const TermsPage: React.FC = () => {
 
                     <section>
                         <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">5. Limitation of Liability</h2>
-                        <p>PropertyHub is not liable for any direct, indirect, incidental, or consequential damages arising from your use of our services or reliance on any information provided.</p>
+                        <p>Dwelgo.ng is not liable for any direct, indirect, incidental, or consequential damages arising from your use of our services or reliance on any information provided.</p>
                     </section>
                 </div>
             </div>

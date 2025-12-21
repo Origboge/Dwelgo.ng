@@ -1,8 +1,8 @@
 import { api } from './api';
 import { User } from '../types';
 
-const TOKEN_KEY = 'propertyhub_token';
-const USER_KEY = 'propertyhub_current_user';
+export const TOKEN_KEY = 'dwelgo_token';
+export const USER_KEY = 'dwelgo_current_user';
 
 const normalizeUser = (user: any): User => {
     if (!user) return user;
@@ -116,8 +116,12 @@ export const AuthService = {
         return updatedUser;
     },
 
-    // TODO: Implement backend endpoint
     resetPassword: async (email: string): Promise<void> => {
         await api.post('/auth/forgot-password', { email });
+    },
+    deleteAccount: async (): Promise<void> => {
+        await api.delete('/auth/me');
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
     }
 };
