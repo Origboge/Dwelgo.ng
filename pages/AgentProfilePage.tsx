@@ -123,6 +123,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     // Track if we are in "Relist" mode to force status change
     const [isRelisting, setIsRelisting] = useState(false);
 
+    // Ref for the edit form to allow auto-scrolling
+    const formRef = useRef<HTMLDivElement>(null);
+
     // Check if the current user is the owner of this agent profile
     // agent.userId might be an object (populated) or a string (ID) depending on API response
     const agentUserId = typeof agent?.userId === 'object' ? (agent.userId as any)._id || (agent.userId as any).id : agent?.userId;
@@ -190,9 +193,8 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         const fetchLikes = async () => {
             if (activeTab === 'likes' && user?.savedPropertyIds?.length) {
                 try {
-                    const promises = user.savedPropertyIds.map(pid => propertyService.getPropertyById(pid));
-                    const results = await Promise.all(promises);
-                    setLikedProperties(results.filter(p => p !== undefined) as Property[]);
+                    const results = await propertyService.getPropertiesByIds(user.savedPropertyIds);
+                    setLikedProperties(results);
                 } catch (err) {
                     console.error('Failed to fetch likes', err);
                 }
@@ -357,6 +359,11 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 ? formData.featuresList
                 : formData.description.split('.').map(s => s.trim()).filter(s => s.length > 5).slice(0, 5),
             isFeatured: false,
+            // Add missing fields for creation
+            latitude: formData.latitude ? Number(formData.latitude) : undefined,
+            longitude: formData.longitude ? Number(formData.longitude) : undefined,
+            priceFrequency: formData.priceFrequency as any,
+            plots: formData.plots ? Number(formData.plots) : undefined,
             // If we are relisting, force status to Available. Otherwise default to Available for new, or undefined (handled by backend preservation) for edit
             // Actually, for edits, we usually want to preserve status unless explicitly changing it.
             // But if isRelisting is true, we MUST set it to Available.
@@ -438,7 +445,12 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             if (error.name === 'QuotaExceededError' || error.message?.includes('QuotaExceededError')) {
                 showToast("Storage Full! You have uploaded too many high-resolution images.", 'error');
             } else {
-                showToast(error.response?.data?.message || error.message || "Failed to save property.", 'error');
+                // Determine the most descriptive error message
+                const backendError = error.response?.data?.message;
+                const serviceError = error.message;
+                const fallbackError = "Failed to save property.";
+
+                showToast(backendError || serviceError || fallbackError, 'error');
             }
         }
         // Removed setTimeout to allow async/await to work propery
@@ -707,7 +719,12 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                         setEditingId(property.id);
                                                         populateEditForm(property); // Use new helper
                                                         setShowAddForm(true);
-                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        setActiveTab('listings'); // Switch to listings tab to show the form
+
+                                                        // Use a short timeout to ensure the tab has switched and form is rendered before scrolling
+                                                        setTimeout(() => {
+                                                            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                        }, 100);
 
                                                         if (actionModal.type === 'relist') {
                                                             setIsRelisting(true); // Flag this session as a relist
@@ -1003,7 +1020,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                         {activeTab === 'listings' && (
                             <>
                                 {showAddForm && (
-                                    <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800 animate-slide-up shadow-xl mb-8 relative">
+                                    <div ref={formRef} className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800 animate-slide-up shadow-xl mb-8 relative">
                                         <div className="absolute top-0 left-0 w-full h-1 bg-zillow-600 rounded-t-lg"></div>
                                         <h4 className="text-xl font-bold mb-6 text-slate-900 dark:text-white flex items-center">
                                             <Home className="mr-2 text-zillow-600" size={24} />
@@ -1093,7 +1110,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleRemoveImage(img.id)}
-                                                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 hover:scale-110"
+                                                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md opacity-100 transition-opacity hover:bg-red-700 hover:scale-110 z-10"
                                                                         title="Remove Image"
                                                                     >
                                                                         <X size={14} />
@@ -1118,7 +1135,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                             <button
                                                                 type="button"
                                                                 onClick={handleRemoveVideo}
-                                                                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 hover:scale-110 z-10"
+                                                                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 shadow-md opacity-100 transition-opacity hover:bg-red-700 hover:scale-110 z-20"
                                                                 title="Remove Video"
                                                             >
                                                                 <X size={16} />

@@ -20,9 +20,8 @@ export const UserDashboardPage: React.FC = () => {
         const fetchSavedProperties = async () => {
             if (user?.savedPropertyIds?.length) {
                 try {
-                    const promises = user.savedPropertyIds.map(id => propertyService.getPropertyById(id));
-                    const results = await Promise.all(promises);
-                    setSavedProperties(results.filter((p): p is Property => p !== undefined));
+                    const results = await propertyService.getPropertiesByIds(user.savedPropertyIds);
+                    setSavedProperties(results);
                 } catch (error) {
                     console.error("Failed to fetch saved properties", error);
                 } finally {

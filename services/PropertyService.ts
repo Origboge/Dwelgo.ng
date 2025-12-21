@@ -93,8 +93,12 @@ class PropertyService {
             const response = await api.get(`/properties/${id}`);
             const rawData = response.data.data;
             return rawData ? this.mapBackendProperty(rawData) : undefined;
-        } catch (error) {
-            console.error(`Failed to fetch property ${id}`, error);
+        } catch (error: any) {
+            // If it's a 404, it just means the property was deleted but still referenced (e.g. in Likes)
+            // No need to spam the console with errors for this expected scenario.
+            if (error.response?.status !== 404) {
+                console.error(`Failed to fetch property ${id}`, error);
+            }
             return undefined;
         }
     }
@@ -202,7 +206,12 @@ class PropertyService {
         } catch (error: any) {
             console.error('Failed to create property', error);
             if (error.response) {
-                console.error('Server Validation Response:', JSON.stringify(error.response.data, null, 2));
+                console.error('Server Error Response:', JSON.stringify(error.response.data, null, 2));
+
+                if (error.response.status === 413) {
+                    throw new Error("Payload Too Large. If you are uploading a video, it may exceed the server's limit (approx. 4.5MB on Vercel).");
+                }
+
                 const errorMsg = error.response.data.message || 'Validation failed';
                 const errors = error.response.data.errors;
                 let validationDetails = '';
@@ -216,7 +225,12 @@ class PropertyService {
                     }).join('\n');
                 }
 
-                alert(`Creation Failed:\n${errorMsg}${validationDetails}`);
+                // If it's a validation error, the alert provides good detail locally, 
+                // but we also throw for the UI to show a toast.
+                if (validationDetails) {
+                    alert(`Creation Failed:\n${errorMsg}${validationDetails}`);
+                }
+                throw new Error(errorMsg);
             }
             throw error;
         }
@@ -240,6 +254,17 @@ class PropertyService {
         } catch (error) {
             console.error('Failed to delete property', error);
             return false;
+        }
+    }
+    async getPropertiesByIds(ids: string[]): Promise<Property[]> {
+        if (!ids || ids.length === 0) return [];
+        try {
+            const response = await api.post('/properties/batch', { ids });
+            const rawData = response.data.data || [];
+            return rawData.map((p: any) => this.mapBackendProperty(p));
+        } catch (error) {
+            console.error('Failed to fetch properties by IDs', error);
+            return [];
         }
     }
 }
