@@ -30,7 +30,15 @@ export const LoginPage: React.FC = () => {
 
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to login');
+      const backendMessage = err.response?.data?.message || err.message;
+
+      if (backendMessage === 'Invalid credentials' || backendMessage === 'User not found') {
+        setError('Incorrect password or email. Please try again.');
+      } else if (backendMessage) {
+        setError(backendMessage);
+      } else {
+        setError('Failed to login. Please check your connection.');
+      }
     }
   };
 

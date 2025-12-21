@@ -16,6 +16,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -43,12 +44,12 @@ const App: React.FC = () => {
               <Route path="/properties" element={<PropertiesPage />} />
               <Route path="/properties/:id" element={<PropertyDetailsPage />} />
 
-              <Route path="/agents/:id" element={<AgentProfilePage />} />
-              <Route path="/dashboard" element={<UserDashboardPage />} />
-              <Route path="/advertise" element={<AdvertisePage />} />
-              <Route path="/about" element={<PlaceholderPage title="About Dwelgo.ng" />} />
-              <Route path="/saved" element={<UserDashboardPage />} />
-              <Route path="/saved" element={<UserDashboardPage />} />
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<UserDashboardPage />} />
+                <Route path="/advertise" element={<AdvertisePage />} />
+                <Route path="/saved" element={<UserDashboardPage />} />
+              </Route>
 
               {/* Admin Routes */}
               <Route element={<ProtectedAdminRoute />}>

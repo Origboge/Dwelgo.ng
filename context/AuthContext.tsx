@@ -19,20 +19,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const initAuth = async () => {
+    try {
+      const currentUser = await AuthService.getCurrentUser();
+      setUser(currentUser);
+    } catch (error) {
+      console.error("Auth init failed", error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Initialize auth state
-    const initAuth = async () => {
-      try {
-        const currentUser = await AuthService.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error("Auth init failed", error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
+    initAuth();
+
+    // Listen for tab focus/return to verify session
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        initAuth();
       }
     };
-    initAuth();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -75,7 +85,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string) => {
-    // We don't change global loading state here usually, but let the calling component handle UI
     return AuthService.resetPassword(email);
   };
 
@@ -91,7 +100,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, resetPassword, updateProfile }}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      register,
+      logout,
+      resetPassword,
+      updateProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );
