@@ -15,6 +15,17 @@ export const UserDashboardPage: React.FC = () => {
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
     const [savedProperties, setSavedProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent scroll jump during submission
+    useEffect(() => {
+        if (isSubmitting) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isSubmitting]);
 
     useEffect(() => {
         const fetchSavedProperties = async () => {
@@ -66,12 +77,15 @@ export const UserDashboardPage: React.FC = () => {
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const result = reader.result as string;
+                setIsSubmitting(true);
                 try {
                     await updateProfile({ avatar: result });
                     showToast("Profile picture updated!", 'success');
                 } catch (error) {
                     console.error("Failed to update profile", error);
                     showToast("Failed to save profile picture. Please try again.", 'error');
+                } finally {
+                    setIsSubmitting(false);
                 }
             };
             reader.readAsDataURL(file);
@@ -86,6 +100,19 @@ export const UserDashboardPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-20">
+            {/* Global Loading Overlay */}
+            {isSubmitting && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-zillow-600 animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-zillow-600">
+                            <User className="animate-pulse" size={32} />
+                        </div>
+                    </div>
+                    <p className="mt-8 text-xl font-bold text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Updating <span className="text-zillow-600">Account</span></p>
+                </div>
+            )}
+
             {/* Toast Notification */}
             {toast.visible && (
                 <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-lg shadow-xl animate-slide-down ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>

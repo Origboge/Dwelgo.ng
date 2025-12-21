@@ -471,6 +471,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     };
 
     const handleUploadAvatar = async (file: File) => {
+        setIsSubmitting(true);
         try {
             // Preview first
             const reader = new FileReader();
@@ -487,12 +488,24 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         } catch (error: any) {
             console.error("Avatar upload failed", error);
             showToast("Failed to upload avatar", 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const getInitials = (first: string, last: string) => {
         return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
     };
+
+    // Prevent scroll jump during submission
+    useEffect(() => {
+        if (isSubmitting) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isSubmitting]);
 
     if (loading) {
         return (
@@ -513,6 +526,23 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
 
     return (
         <div className="min-h-screen text-slate-900 bg-gray-50 dark:bg-[#0a0a0a]">
+            {/* Global Submission Overlay */}
+            {isSubmitting && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-blue-600 animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Building2 className="text-blue-600 animate-pulse" size={32} />
+                        </div>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
+                        Publishing <span className="text-blue-600">Listing</span>
+                    </h3>
+                    <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium animate-pulse text-center px-4">
+                        Please wait while we upload your property details and media...
+                    </p>
+                </div>
+            )}
 
 
             {/* Header / Cover Image Section */}
@@ -698,19 +728,26 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                         }`}
                                     onClick={async () => {
                                         if (actionModal.propertyId) {
+                                            setIsSubmitting(true);
                                             try {
                                                 if (actionModal.type === 'delete') {
                                                     await propertyService.deleteProperty(actionModal.propertyId);
                                                     setRefreshTrigger(prev => prev + 1);
+                                                    setIsSubmitting(false);
+                                                    setActionModal({ visible: false, type: null, propertyId: null });
                                                     showToast('Property deleted successfully', 'success');
                                                 } else if (actionModal.type === 'mark_sold') {
                                                     await propertyService.updateProperty(actionModal.propertyId, { status: 'Sold' });
                                                     setRefreshTrigger(prev => prev + 1);
+                                                    setIsSubmitting(false);
+                                                    setActionModal({ visible: false, type: null, propertyId: null });
                                                     setShowSoldOverlay(true);
                                                     setTimeout(() => setShowSoldOverlay(false), 3000);
                                                 } else if (actionModal.type === 'archive') {
                                                     await propertyService.updateProperty(actionModal.propertyId, { status: 'Archived' });
                                                     setRefreshTrigger(prev => prev + 1);
+                                                    setIsSubmitting(false);
+                                                    setActionModal({ visible: false, type: null, propertyId: null });
                                                     showToast('Property Archived (Hidden)', 'success');
                                                 } else if (actionModal.type === 'edit' || actionModal.type === 'relist') {
                                                     // Logic for Edit/Relist
@@ -732,11 +769,14 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                             setIsRelisting(false);
                                                         }
                                                     }
+                                                    setIsSubmitting(false);
+                                                    setActionModal({ visible: false, type: null, propertyId: null });
                                                 }
-                                                setActionModal({ visible: false, type: null, propertyId: null });
                                             } catch (err: any) {
                                                 console.error(err);
+                                                setIsSubmitting(false);
                                                 showToast(err.response?.data?.message || 'Action failed', 'error');
+                                                setActionModal({ visible: false, type: null, propertyId: null });
                                             }
                                         }
                                     }}
@@ -826,16 +866,25 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                             {isOwner && (
                                 <div className="mt-6">
                                     <button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (isEditingProfile) {
-                                                updateProfile({
-                                                    bio: profileForm.bio,
-                                                    licenseNumber: profileForm.licenseNumber,
-                                                    experience: Number(profileForm.experience),
-                                                    specialties: profileForm.specialties.split(',').map(s => s.trim()),
-                                                    location: profileForm.location
-                                                });
-                                                setIsEditingProfile(false);
+                                                setIsSubmitting(true);
+                                                try {
+                                                    await updateProfile({
+                                                        bio: profileForm.bio,
+                                                        licenseNumber: profileForm.licenseNumber,
+                                                        experience: Number(profileForm.experience),
+                                                        specialties: profileForm.specialties.split(',').map(s => s.trim()),
+                                                        location: profileForm.location
+                                                    });
+                                                    showToast('Profile updated successfully!', 'success');
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    showToast('Failed to update profile', 'error');
+                                                } finally {
+                                                    setIsSubmitting(false);
+                                                    setIsEditingProfile(false);
+                                                }
                                             } else {
                                                 setProfileForm({
                                                     bio: user?.bio || agent.bio || '',

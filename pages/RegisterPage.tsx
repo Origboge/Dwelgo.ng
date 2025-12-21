@@ -29,6 +29,16 @@ export const RegisterPage: React.FC = () => {
     }
   }, [location]);
 
+  // Prevent scroll jump during submission
+  useEffect(() => {
+    if (isLoading) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isLoading]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -65,6 +75,18 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+      {/* Global Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-zillow-600 animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center text-zillow-600">
+              <UserIcon className="animate-pulse" size={32} />
+            </div>
+          </div>
+          <p className="mt-8 text-xl font-bold text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Creating <span className="text-zillow-600">Account</span></p>
+        </div>
+      )}
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-blue-900">
         <img

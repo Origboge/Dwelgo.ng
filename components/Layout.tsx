@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck, Phone } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
@@ -297,26 +297,37 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div>
               <h4 className="font-bold text-slate-900 dark:text-white mb-4">Real Estate</h4>
               <ul className="space-y-2 text-slate-500 dark:text-slate-400 text-sm">
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Browse Homes</a></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Sell Your Home</a></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Rentals</a></li>
+                <li><Link to="/properties" className="hover:text-zillow-600 hover:underline">Browse Homes</Link></li>
+                <li><Link to="/register?role=agent" className="hover:text-zillow-600 hover:underline">Sell Your Home</Link></li>
+                <li><Link to="/properties?listingType=Rent" className="hover:text-zillow-600 hover:underline">Rentals</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-slate-900 dark:text-white mb-4">Company</h4>
               <ul className="space-y-2 text-slate-500 dark:text-slate-400 text-sm">
                 <li><a href="#" className="hover:text-zillow-600 hover:underline">About Us</a></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Careers</a></li>
                 <li><Link to="/terms" className="hover:text-zillow-600 hover:underline">Terms & Conditions</Link></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Help Center</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold text-slate-900 dark:text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-slate-500 dark:text-slate-400 text-sm">
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Blog</a></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Guides</a></li>
-                <li><a href="#" className="hover:text-zillow-600 hover:underline">Agent Finder</a></li>
+              <h4 className="font-bold text-slate-900 dark:text-white mb-4">Support</h4>
+              <ul className="space-y-3 text-slate-500 dark:text-slate-400 text-sm">
+                <li>
+                  <a href="tel:09034816423" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-600 dark:text-slate-400 font-medium">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                      <Phone size={14} />
+                    </div>
+                    09034816423
+                  </a>
+                </li>
+                <li>
+                  <a href="tel:07032035758" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-600 dark:text-slate-400 font-medium">
+                    <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+                      <Phone size={14} />
+                    </div>
+                    07032035758
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

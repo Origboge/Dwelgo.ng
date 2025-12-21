@@ -34,12 +34,24 @@ export const PropertyDetailsPage: React.FC = () => {
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [ratingValue, setRatingValue] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent scroll jump during submission
+    useEffect(() => {
+        if (isSubmitting) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isSubmitting]);
 
     // Derived State
     const isLiked = property && user?.savedPropertyIds?.includes(property.id);
 
     const handleSubmitRating = async () => {
         if (!property || ratingValue === 0) return;
+        setIsSubmitting(true);
         try {
             const result = await agentService.rateAgent(property.agent.id, ratingValue);
             // Update local property agent rating
@@ -51,10 +63,11 @@ export const PropertyDetailsPage: React.FC = () => {
                 }
             }));
             setIsRatingModalOpen(false);
-            alert(`Thanks! You rated ${property.agent.firstName} ${ratingValue} stars.`);
+            // alert removed in favor of a smoother experience if desired, but keeping it simple for now
         } catch (error) {
             console.error('Rating failed', error);
-            alert('Rating failed. You might have already rated this agent?');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -74,7 +87,13 @@ export const PropertyDetailsPage: React.FC = () => {
         } else {
             newSaved = [...currentSaved, property.id];
         }
-        await updateProfile({ savedPropertyIds: newSaved });
+
+        setIsSubmitting(true);
+        try {
+            await updateProfile({ savedPropertyIds: newSaved });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     useEffect(() => {
@@ -127,6 +146,19 @@ export const PropertyDetailsPage: React.FC = () => {
 
     return (
         <div className="min-h-screen text-slate-900 dark:text-white pb-20 bg-slate-50 dark:bg-[#0a0a0a] relative overflow-hidden">
+            {/* Global Loading Overlay */}
+            {isSubmitting && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-zillow-600 animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-zillow-600">
+                            <Star className="animate-pulse" size={32} />
+                        </div>
+                    </div>
+                    <p className="mt-8 text-xl font-bold text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Processing <span className="text-zillow-600">Action</span></p>
+                </div>
+            )}
+
             {/* Decorative Background Blob for "Life" */}
             <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-900/10 pointer-events-none opacity-60"></div>
 
