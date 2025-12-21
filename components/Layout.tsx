@@ -49,7 +49,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   const navLinks = [
-    { name: 'Buy', path: '/properties' },
+    { name: 'Buy / Rent', path: '/properties' },
     { name: 'Advertise', path: '/advertise' },
   ];
 
