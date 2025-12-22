@@ -122,7 +122,9 @@ export const PropertyDetailsPage: React.FC = () => {
                     }
 
                     const suggestions = await propertyService.getSuggestedProperties(params);
-                    setSuggestedProperties(suggestions);
+                    // Shuffle suggestions to make them feel dynamic on every visit
+                    const shuffledSuggestions = [...suggestions].sort(() => Math.random() - 0.5);
+                    setSuggestedProperties(shuffledSuggestions);
                 } catch (sErr) {
                     console.error('Failed to load suggestions', sErr);
                 }
@@ -504,25 +506,29 @@ export const PropertyDetailsPage: React.FC = () => {
                 {suggestedProperties.length > 0 && (
                     <ScrollReveal animation="fade-in-up">
                         <div className="mt-16 pt-12 border-t border-slate-200 dark:border-slate-800">
-                            <div className="flex items-center justify-between mb-8">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <Sparkles className="text-yellow-500" size={24} />
-                                        Suggested Properties
-                                    </h2>
-                                    <p className="text-slate-500 dark:text-slate-400 mt-1">Based on location and property type</p>
-                                </div>
-                                <Button variant="outline" onClick={() => navigate('/search')} className="hidden sm:flex">View More</Button>
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Sparkles className="text-yellow-500" size={24} />
+                                    Suggested Properties
+                                </h2>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {suggestedProperties.map((prop) => (
-                                    <PropertyCard key={prop.id} property={prop} />
+                                {suggestedProperties.slice(0, 4).map((prop, idx) => (
+                                    <div key={prop.id} className={idx === 3 ? 'hidden sm:block' : ''}>
+                                        <PropertyCard property={prop} />
+                                    </div>
                                 ))}
                             </div>
 
-                            <div className="mt-8 text-center sm:hidden">
-                                <Button variant="outline" onClick={() => navigate('/search')} className="w-full">View More</Button>
+                            <div className="mt-10 text-center">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => navigate('/properties')}
+                                    className="w-full sm:w-auto px-12"
+                                >
+                                    View All Properties
+                                </Button>
                             </div>
                         </div>
                     </ScrollReveal>

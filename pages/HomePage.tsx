@@ -162,7 +162,6 @@ export const HomePage: React.FC = () => {
                     placeholder="Enter an address, neighborhood, city, or ZIP code"
                     className="w-full h-14 px-5 rounded-md border border-gray-200 bg-white text-lg text-slate-900 placeholder:text-gray-400 focus:border-zillow-600 focus:ring-2 focus:ring-zillow-100 outline-none transition-all"
                     onKeyDown={(e) => e.key === 'Enter' && navigate('/properties', { state: { searchTerm: searchQuery } })}
-                    autoFocus
                   />
 
                   {/* Suggestions Dropdown */}
