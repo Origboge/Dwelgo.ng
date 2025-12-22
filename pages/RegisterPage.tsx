@@ -84,7 +84,9 @@ export const RegisterPage: React.FC = () => {
         ...formData,
         role
       });
-      navigate('/');
+      const params = new URLSearchParams(location.search);
+      const redirectPath = params.get('redirect');
+      navigate(redirectPath || '/');
     } catch (err: any) {
       const backendError = err.response?.data?.message;
       if (backendError === 'Email already registered') {

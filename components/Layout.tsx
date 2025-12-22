@@ -48,9 +48,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   };
 
+  const handleAdvertiseClick = () => {
+    if (!user) {
+      alert("Please sign up first to start advertising your properties on Dwelgo.ng");
+      navigate('/register?redirect=/advertise&role=agent');
+    } else {
+      navigate('/advertise');
+    }
+  };
+
   const navLinks = [
     { name: 'Buy / Rent', path: '/properties' },
-    { name: 'Advertise', path: '/advertise' },
   ];
 
   return (
@@ -85,6 +93,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 {link.name}
               </Link>
             ))}
+            {/* Special Advertise Button */}
+            <button
+              onClick={handleAdvertiseClick}
+              className="text-sm font-medium hover:text-zillow-600 dark:hover:text-zillow-400 transition-colors pb-1 border-b-2 border-transparent hover:border-zillow-600"
+            >
+              Advertise
+            </button>
             {/* Special Sell Button Logic */}
             <button
               onClick={handleSellClick}
@@ -211,10 +226,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    handleSellClick();
+                    handleAdvertiseClick();
                   }}
                   className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-3 border-b border-gray-100 dark:border-gray-800 text-left animate-fade-in-right flex items-center justify-between group"
                   style={{ animationDelay: `${navLinks.length * 100}ms` }}
+                >
+                  Advertise
+                  <Megaphone size={18} className="text-gray-400 group-hover:text-zillow-600 transition-colors" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleSellClick();
+                  }}
+                  className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-3 border-b border-gray-100 dark:border-gray-800 text-left animate-fade-in-right flex items-center justify-between group"
+                  style={{ animationDelay: `${(navLinks.length + 1) * 100}ms` }}
                 >
                   Sell
                   <DollarSign size={18} className="text-gray-400 group-hover:text-zillow-600 transition-colors" />

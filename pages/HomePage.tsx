@@ -6,11 +6,13 @@ import { Button } from '../components/Button';
 import { PropertyCard } from '../components/PropertyCard';
 import { propertyService } from '../services/PropertyService';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { useAuth } from '../context/AuthContext';
 
 type TabType = 'sale' | 'rent' | 'land_commercial';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [offset, setOffset] = useState(0);
   const [activeTab, setActiveTab] = useState<TabType>('sale');
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +102,15 @@ export const HomePage: React.FC = () => {
     navigate('/properties', { state: { searchTerm: suggestion } });
   };
 
+  const handleAdvertiseClick = () => {
+    if (!user) {
+      alert("Please sign up first to start advertising your properties on Dwelgo.ng");
+      navigate('/register?redirect=/advertise&role=agent');
+    } else {
+      navigate('/advertise');
+    }
+  };
+
   // Filter Logic for tabs (Client-side filtering of the fetched Featured list)
   const displayedProperties = useMemo(() => {
     return featuredProperties.filter(p => {
@@ -157,11 +168,18 @@ export const HomePage: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    onFocus={() => searchQuery.length > 1 && setShowSuggestions(true)}
+                    onFocus={(e) => {
+                      e.target.readOnly = false;
+                      if (searchQuery.length > 1) setShowSuggestions(true);
+                    }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click
                     placeholder="Enter an address, neighborhood, city, or ZIP code"
                     className="w-full h-14 px-5 rounded-md border border-gray-200 bg-white text-lg text-slate-900 placeholder:text-gray-400 focus:border-zillow-600 focus:ring-2 focus:ring-zillow-100 outline-none transition-all"
                     onKeyDown={(e) => e.key === 'Enter' && navigate('/properties', { state: { searchTerm: searchQuery } })}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    readOnly
                   />
 
                   {/* Suggestions Dropdown */}
@@ -395,7 +413,7 @@ export const HomePage: React.FC = () => {
                   <Button
                     variant="secondary"
                     className="bg-white text-indigo-950 border-none hover:bg-indigo-50 font-bold px-10 py-4 text-lg rounded-xl shadow-xl transition-all hover:scale-105"
-                    onClick={() => navigate('/advertise')}
+                    onClick={handleAdvertiseClick}
                   >
                     Start Advertising
                   </Button>

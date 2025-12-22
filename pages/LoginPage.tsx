@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -13,6 +13,7 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Prevent scroll jump during submission
   React.useEffect(() => {
@@ -39,7 +40,9 @@ export const LoginPage: React.FC = () => {
         throw new Error("This account is an Agent account. Please use the Agent login.");
       }
 
-      navigate('/');
+      const params = new URLSearchParams(location.search);
+      const redirectPath = params.get('redirect');
+      navigate(redirectPath || '/');
     } catch (err: any) {
       const backendMessage = err.response?.data?.message || err.message;
 
