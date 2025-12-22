@@ -13,7 +13,7 @@ import {
     Phone, Mail, MapPin, Award, Star, Globe, Linkedin, Twitter, Instagram, ShieldCheck,
     ArrowLeft, ArrowRight, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
     DollarSign, Home, CheckSquare, Maximize, BarChart3, Users, MousePointerClick, Crosshair, MessageCircle, Camera,
-    CheckCircle2, AlertTriangle, Edit, BadgeCheck, Trash2
+    CheckCircle2, AlertTriangle, Edit, BadgeCheck, Trash2, Check
 } from 'lucide-react';
 import { Agent } from '../types';
 import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
@@ -82,13 +82,18 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const initialTab = queryParams.get('tab') === 'likes' ? 'likes' : 'listings';
     const [activeTab, setActiveTab] = useState<'listings' | 'likes' | 'sold' | 'archived'>(initialTab as any);
 
-    // Profile Form State
     const [profileForm, setProfileForm] = useState({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
         bio: user?.bio || '',
         licenseNumber: user?.licenseNumber || '',
         experience: user?.experience || '',
         specialties: user?.specialties?.join(', ') || '',
-        location: user?.location || 'Lagos, Nigeria'
+        location: user?.location || 'Lagos, Nigeria',
+        agencyName: user?.agencyName || '',
+        state: user?.state || '',
+        city: user?.city || ''
     });
 
     // Listing Form State
@@ -275,6 +280,28 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         setPropertyImages(newImages);
     };
 
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        e.dataTransfer.setData('draggedIndex', index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        const draggedIndexStr = e.dataTransfer.getData('draggedIndex');
+        if (!draggedIndexStr) return;
+        const draggedIndex = parseInt(draggedIndexStr);
+        if (draggedIndex === dropIndex) return;
+
+        const newImages = [...propertyImages];
+        const draggedItem = newImages[draggedIndex];
+        newImages.splice(draggedIndex, 1);
+        newImages.splice(dropIndex, 0, draggedItem);
+        setPropertyImages(newImages);
+    };
+
     const handleRemoveVideo = () => {
         setVideoPreview(null);
         setVideoFile(null);
@@ -312,10 +339,20 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     longitude: position.coords.longitude.toString()
                 }));
                 setIsLocating(false);
+                showToast("High precision location captured!", "success");
             },
             (error) => {
-                showToast("Unable to retrieve your location", 'error');
+                let msg = "Unable to retrieve your location";
+                if (error.code === 1) msg = "Location permission denied";
+                else if (error.code === 2) msg = "Position unavailable";
+                else if (error.code === 3) msg = "Location request timed out";
+                showToast(msg, 'error');
                 setIsLocating(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             }
         );
     };
@@ -643,13 +680,42 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                         </div>
 
                         {/* Name & Title */}
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1 uppercase">
-                            {agent.firstName} <span className="text-slate-500 dark:text-slate-400">{agent.lastName}</span>
-                        </h1>
-                        <p className="text-base text-blue-600 dark:text-blue-400 font-medium mb-4 tracking-wide flex items-center gap-2 justify-center">
-                            {agent.agencyName || 'Real Estate Professional'}
-                            {agent.isVerified && <BadgeCheck size={18} className="text-blue-500 fill-blue-500/20" />}
-                        </p>
+                        {isEditingProfile ? (
+                            <div className="flex gap-2 mb-4 w-full max-w-md">
+                                <input
+                                    type="text"
+                                    placeholder="First Name"
+                                    className="flex-1 p-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800"
+                                    value={profileForm.firstName}
+                                    onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Last Name"
+                                    className="flex-1 p-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800"
+                                    value={profileForm.lastName}
+                                    onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                                />
+                            </div>
+                        ) : (
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1 uppercase">
+                                {agent.firstName} <span className="text-slate-500 dark:text-slate-400">{agent.lastName}</span>
+                            </h1>
+                        )}
+                        {isEditingProfile ? (
+                            <input
+                                type="text"
+                                placeholder="Agency Name"
+                                className="w-full max-w-md p-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 mb-4 outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={profileForm.agencyName}
+                                onChange={(e) => setProfileForm({ ...profileForm, agencyName: e.target.value })}
+                            />
+                        ) : (
+                            <p className="text-base text-blue-600 dark:text-blue-400 font-medium mb-4 tracking-wide flex items-center gap-2 justify-center">
+                                {agent.agencyName || 'Real Estate Professional'}
+                                {agent.isVerified && <BadgeCheck size={18} className="text-blue-500 fill-blue-500/20" />}
+                            </p>
+                        )}
 
                         {/* Owner Badge */}
                         {isOwner && (
@@ -678,7 +744,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                             </div>
                             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
                                 <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Location</div>
-                                <div className="text-slate-900 dark:text-white font-bold text-base truncate px-1">{agent.location || 'Lagos'}</div>
+                                <div className="text-slate-900 dark:text-white font-bold text-base truncate px-1">{user?.city || agent.location || 'Lagos'}</div>
                             </div>
                         </div>
 
@@ -882,6 +948,56 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                 </div>
                                 <div>
                                     <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <Phone size={14} /> Phone Number
+                                    </p>
+                                    {isEditingProfile ? (
+                                        <input
+                                            value={profileForm.phone}
+                                            onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                                            className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zillow-600 outline-none"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                            {user?.phone || agent.phone || "N/A"}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <MapPin size={14} /> Location (City & State)
+                                    </p>
+                                    {isEditingProfile ? (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select
+                                                className="w-full p-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none"
+                                                value={profileForm.state}
+                                                onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value, city: '' })}
+                                            >
+                                                <option value="">State</option>
+                                                {Object.keys(NIGERIA_LOCATIONS).map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                className="w-full p-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none"
+                                                value={profileForm.city}
+                                                onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                                                disabled={!profileForm.state}
+                                            >
+                                                <option value="">City</option>
+                                                {(profileForm.state ? NIGERIA_LOCATIONS[profileForm.state as keyof typeof NIGERIA_LOCATIONS] || [] : []).map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <p className="text-slate-700 dark:text-slate-300 text-sm">
+                                            {user?.city ? `${user.city}, ${user.state}` : user?.location || "N/A"}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
                                         <ShieldCheck size={14} /> License
                                     </p>
                                     {isEditingProfile ? (
@@ -916,13 +1032,20 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                 setIsSubmitting(true);
                                                 try {
                                                     await updateProfile({
+                                                        firstName: profileForm.firstName,
+                                                        lastName: profileForm.lastName,
+                                                        phone: profileForm.phone,
                                                         bio: profileForm.bio,
                                                         licenseNumber: profileForm.licenseNumber,
                                                         experience: Number(profileForm.experience),
                                                         specialties: profileForm.specialties.split(',').map(s => s.trim()),
-                                                        location: profileForm.location
+                                                        location: profileForm.location,
+                                                        agencyName: profileForm.agencyName,
+                                                        state: profileForm.state,
+                                                        city: profileForm.city
                                                     });
                                                     showToast('Profile updated successfully!', 'success');
+                                                    setRefreshTrigger(prev => prev + 1);
                                                 } catch (err) {
                                                     console.error(err);
                                                     showToast('Failed to update profile', 'error');
@@ -932,18 +1055,24 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                 }
                                             } else {
                                                 setProfileForm({
+                                                    firstName: user?.firstName || '',
+                                                    lastName: user?.lastName || '',
+                                                    phone: user?.phone || '',
                                                     bio: user?.bio || agent.bio || '',
                                                     licenseNumber: user?.licenseNumber || agent.licenseNumber || '',
                                                     experience: user?.experience || agent.experience || '',
                                                     specialties: user?.specialties?.join(', ') || "Buyer's Agent, Listing Agent",
-                                                    location: user?.location || 'Lagos, Nigeria'
+                                                    location: user?.location || 'Lagos, Nigeria',
+                                                    agencyName: user?.agencyName || agent.agencyName || '',
+                                                    state: user?.state || '',
+                                                    city: user?.city || ''
                                                 });
                                                 setIsEditingProfile(true);
                                             }
                                         }}
                                         className={`w-full ${isEditingProfile ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600'} px-5 py-3 rounded-lg text-sm font-bold border border-transparent hover:opacity-90 transition-colors shadow-sm flex items-center justify-center gap-2`}
                                     >
-                                        {isEditingProfile ? <CheckCircle2 size={16} /> : <Edit size={16} />}
+                                        {isEditingProfile ? <Check size={16} /> : <Edit size={16} />}
                                         {isEditingProfile ? 'Save Changes' : 'Edit Info'}
                                     </button>
                                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1242,49 +1371,61 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     {propertyImages.length > 0 && (
                                                         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                                                             {propertyImages.map((img, idx) => (
-                                                                <div key={idx} className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${idx === 0 ? 'border-blue-600 shadow-lg ring-2 ring-blue-600/20' : 'border-gray-200 dark:border-gray-800'}`}>
+                                                                <div
+                                                                    key={img.id}
+                                                                    draggable
+                                                                    onDragStart={(e) => handleDragStart(e, idx)}
+                                                                    onDragOver={handleDragOver}
+                                                                    onDrop={(e) => handleDrop(e, idx)}
+                                                                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-move group ${idx === 0 ? 'border-blue-600 shadow-lg ring-2 ring-blue-600/20' : 'border-gray-200 dark:border-gray-800'}`}
+                                                                >
                                                                     <img src={img.url} alt="Preview" className="w-full h-full object-cover" />
 
                                                                     {/* Cover Badge */}
                                                                     {idx === 0 && (
                                                                         <div className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10 flex items-center gap-1 uppercase tracking-wider">
-                                                                            <Star size={10} className="fill-white" /> Cover Photo
+                                                                            <Star size={10} className="fill-white" /> Cover
                                                                         </div>
                                                                     )}
 
-                                                                    {/* Controls Overlay */}
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                    {/* Remove Button - Always visible for mobile usability */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveImage(img.id)}
+                                                                        className="absolute top-1.5 right-1.5 bg-red-600/90 text-white rounded-full p-1.5 shadow-md hover:bg-red-700 transition-colors z-20"
+                                                                        title="Delete Image"
+                                                                    >
+                                                                        <X size={16} />
+                                                                    </button>
+
+                                                                    {/* Reorder Arrows - Visible on hover/tap */}
+                                                                    <div className="absolute inset-x-0 bottom-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-2">
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => handleMoveImage(idx, 'left')}
-                                                                            className={`bg-white/90 text-slate-900 rounded-full p-1.5 hover:bg-white transition-colors shadow-lg ${idx === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                            title="Move Forward"
+                                                                            onClick={(e) => { e.stopPropagation(); handleMoveImage(idx, 'left'); }}
+                                                                            className={`bg-white/90 text-slate-900 rounded-lg p-1 hover:bg-white transition-colors ${idx === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                             disabled={idx === 0}
                                                                         >
                                                                             <ArrowLeft size={16} />
                                                                         </button>
+
+                                                                        <div className="text-white text-[10px] uppercase font-bold tracking-tighter">
+                                                                            {idx === 0 ? 'Primary' : `Image ${idx + 1}`}
+                                                                        </div>
+
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => handleRemoveImage(img.id)}
-                                                                            className="bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors shadow-lg"
-                                                                            title="Delete Image"
-                                                                        >
-                                                                            <X size={20} />
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleMoveImage(idx, 'right')}
-                                                                            className={`bg-white/90 text-slate-900 rounded-full p-1.5 hover:bg-white transition-colors shadow-lg ${idx === propertyImages.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                            title="Move Backward"
+                                                                            onClick={(e) => { e.stopPropagation(); handleMoveImage(idx, 'right'); }}
+                                                                            className={`bg-white/90 text-slate-900 rounded-lg p-1 hover:bg-white transition-colors ${idx === propertyImages.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                             disabled={idx === propertyImages.length - 1}
                                                                         >
                                                                             <ArrowRight size={16} />
                                                                         </button>
                                                                     </div>
 
-                                                                    {/* Index indicator */}
-                                                                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm font-bold">
-                                                                        {idx + 1}
+                                                                    {/* Drag Handle Indicator */}
+                                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity">
+                                                                        <Maximize size={24} className="text-white" />
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1360,10 +1501,10 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                                         <MapPin className="text-zillow-600" size={32} />
                                                     </div>
-                                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Property Location</h3>
+                                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Precise Pin Location</h3>
                                                     <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">
-                                                        Pinning your location helps buyers find your property accurately on the map.
-                                                        Stand at the property location and click the button below.
+                                                        Pinning your <b>exact physical coordinates</b> provides a much more precise point on the map than the street address.
+                                                        Stand at the property entrance/gate and click the button below.
                                                     </p>
 
                                                     {formData.latitude && formData.longitude ? (

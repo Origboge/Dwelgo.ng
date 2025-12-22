@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { propertyService } from '../services/PropertyService';
 import { PropertyCard } from '../components/PropertyCard';
 import { Button } from '../components/Button';
-import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard, Trash2, AlertTriangle, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard, Trash2, AlertTriangle, X, Edit, Check } from 'lucide-react';
+import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
 import { Property } from '../types';
 
 import { AgentProfilePage } from './AgentProfilePage';
@@ -17,6 +18,14 @@ export const UserDashboardPage: React.FC = () => {
     const [savedProperties, setSavedProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [profileForm, setProfileForm] = useState({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
+        state: user?.state || '',
+        city: user?.city || ''
+    });
 
     // Prevent scroll jump during submission
     useEffect(() => {
@@ -93,6 +102,26 @@ export const UserDashboardPage: React.FC = () => {
         }
     };
 
+    const handleSaveProfile = async () => {
+        setIsSubmitting(true);
+        try {
+            await updateProfile({
+                firstName: profileForm.firstName,
+                lastName: profileForm.lastName,
+                phone: profileForm.phone,
+                state: profileForm.state,
+                city: profileForm.city
+            });
+            showToast("Profile updated successfully!", 'success');
+            setIsEditingProfile(false);
+        } catch (error) {
+            console.error("Update profile error", error);
+            showToast("Failed to update profile. Please try again.", 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDeleteAccount = async () => {
         setIsSubmitting(true);
         setShowDeleteConfirm(false);
@@ -108,6 +137,8 @@ export const UserDashboardPage: React.FC = () => {
             setIsSubmitting(false);
         }
     };
+
+    const availableCities = profileForm.state ? NIGERIA_LOCATIONS[profileForm.state as keyof typeof NIGERIA_LOCATIONS] || [] : [];
 
     const getInitials = (first: string, last: string) => {
         const f = first ? first.charAt(0) : '';
@@ -187,11 +218,48 @@ export const UserDashboardPage: React.FC = () => {
                                 </button>
                             </div>
 
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-1 uppercase tracking-tight">
-                                {user.firstName} <span className="text-slate-500 dark:text-slate-400">{user.lastName || user.name}</span>
-                            </h2>
+                            {isEditingProfile ? (
+                                <div className="space-y-3 w-full mb-4">
+                                    <input
+                                        type="text"
+                                        placeholder="First Name"
+                                        className="w-full p-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={profileForm.firstName}
+                                        onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Last Name"
+                                        className="w-full p-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={profileForm.lastName}
+                                        onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                                    />
+                                </div>
+                            ) : (
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-1 uppercase tracking-tight">
+                                    {user.firstName} <span className="text-slate-500 dark:text-slate-400">{user.lastName || user.name}</span>
+                                </h2>
+                            )}
                             <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-6 font-medium">
                                 <span className="capitalize px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">{user.role} Account</span>
+                                {!isEditingProfile && (
+                                    <button
+                                        onClick={() => {
+                                            setProfileForm({
+                                                firstName: user.firstName || '',
+                                                lastName: user.lastName || '',
+                                                phone: user.phone || '',
+                                                state: user.state || '',
+                                                city: user.city || ''
+                                            });
+                                            setIsEditingProfile(true);
+                                        }}
+                                        className="p-1 hover:text-blue-500 transition-colors"
+                                        title="Edit Profile"
+                                    >
+                                        <Edit size={14} />
+                                    </button>
+                                )}
                             </div>
 
                             <div className="w-full space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
@@ -212,11 +280,71 @@ export const UserDashboardPage: React.FC = () => {
 
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Phone Number</label>
-                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 text-sm font-medium">
-                                        <Phone size={16} className="text-blue-500" />
-                                        <span>{user.phone || 'Not set'}</span>
-                                    </div>
+                                    {isEditingProfile ? (
+                                        <input
+                                            type="tel"
+                                            className="w-full p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                            value={profileForm.phone}
+                                            onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                            <Phone size={16} className="text-blue-500" />
+                                            <span>{user.phone || 'Not set'}</span>
+                                        </div>
+                                    )}
                                 </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Location</label>
+                                    {isEditingProfile ? (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select
+                                                className="w-full p-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none"
+                                                value={profileForm.state}
+                                                onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value, city: '' })}
+                                            >
+                                                <option value="">State</option>
+                                                {Object.keys(NIGERIA_LOCATIONS).map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                className="w-full p-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 outline-none"
+                                                value={profileForm.city}
+                                                onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                                                disabled={!profileForm.state}
+                                            >
+                                                <option value="">City</option>
+                                                {availableCities.map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                            <MapPin size={16} className="text-blue-500" />
+                                            <span>{user.city ? `${user.city}, ${user.state}` : user.location || 'Not set'}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isEditingProfile && (
+                                    <div className="flex gap-2 pt-2">
+                                        <button
+                                            onClick={handleSaveProfile}
+                                            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1"
+                                        >
+                                            <Check size={16} /> Save
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingProfile(false)}
+                                            className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg font-bold text-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
 
                                 {user.role === 'agent' && (
                                     <div className="pt-2">
@@ -242,13 +370,14 @@ export const UserDashboardPage: React.FC = () => {
                         </div>
                     </div>
 
+
                     {/* Delete Confirmation Modal */}
                     {showDeleteConfirm && (
                         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                             <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 scale-in-center overflow-hidden relative">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl">
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/10 text-red-600 rounded-xl">
                                         <AlertTriangle size={24} />
                                     </div>
                                     <button onClick={() => setShowDeleteConfirm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">

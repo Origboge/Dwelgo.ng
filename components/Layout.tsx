@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck, Phone } from 'lucide-react';
+import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck, Phone, DollarSign } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
@@ -195,14 +195,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </button>
               </div>
               <div className="flex flex-col space-y-4">
-                {navLinks.map((link) => (
+                {navLinks.map((link, idx) => (
                   <Link
                     key={link.name}
                     to={link.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-2 border-b border-gray-100 dark:border-gray-800"
+                    className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-3 border-b border-gray-100 dark:border-gray-800 animate-fade-in-right flex items-center justify-between group"
+                    style={{ animationDelay: `${idx * 100}ms` }}
                   >
                     {link.name}
+                    <Building2 size={18} className="text-gray-400 group-hover:text-zillow-600 transition-colors" />
                   </Link>
                 ))}
 
@@ -211,18 +213,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     setMobileMenuOpen(false);
                     handleSellClick();
                   }}
-                  className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-2 border-b border-gray-100 dark:border-gray-800 text-left"
+                  className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-3 border-b border-gray-100 dark:border-gray-800 text-left animate-fade-in-right flex items-center justify-between group"
+                  style={{ animationDelay: `${navLinks.length * 100}ms` }}
                 >
                   Sell
+                  <DollarSign size={18} className="text-gray-400 group-hover:text-zillow-600 transition-colors" />
                 </button>
 
-                {user?.role === 'agent' && (
+                {user && (
                   <Link
                     to="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-zillow-600 py-2 border-b border-gray-100 dark:border-gray-800"
+                    className="text-lg font-bold text-zillow-600 py-3 border-b border-gray-100 dark:border-gray-800 animate-fade-in-right flex items-center justify-between"
+                    style={{ animationDelay: `${(navLinks.length + 1) * 100}ms` }}
                   >
                     My Dashboard
+                    <LayoutDashboard size={20} />
                   </Link>
                 )}
 
@@ -230,27 +236,23 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <Link
                     to="/admin/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-indigo-600 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2"
+                    className="text-lg font-medium text-indigo-600 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between animate-fade-in-right"
+                    style={{ animationDelay: `${(navLinks.length + 2) * 100}ms` }}
                   >
-                    <ShieldCheck size={16} /> Admin Panel
+                    Admin Panel
+                    <ShieldCheck size={20} />
                   </Link>
                 )}
 
-                <Link
-                  to={user?.role === 'agent' ? `/agents/${user.id}?tab=likes` : '/saved'}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2"
-                >
-                  Likes <Heart size={16} className="fill-current" />
-                </Link>
-
-                {user && user.role !== 'agent' && (
+                {user && (
                   <Link
-                    to="/dashboard"
+                    to={user?.role === 'agent' ? `/agents/${user.id}?tab=likes` : '/saved'}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-zillow-600 py-2 border-b border-gray-100 dark:border-gray-800"
+                    className="text-lg font-medium text-slate-900 dark:text-white hover:text-zillow-600 dark:hover:text-zillow-400 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between animate-fade-in-right"
+                    style={{ animationDelay: `${(navLinks.length + 3) * 100}ms` }}
                   >
-                    My Dashboard
+                    Likes
+                    <Heart size={20} className="text-red-500 fill-current" />
                   </Link>
                 )}
 

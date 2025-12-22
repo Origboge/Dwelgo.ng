@@ -14,12 +14,15 @@ export interface User {
   experience?: number;
   specialties?: string[];
   location?: string;
+  state?: string;
+  city?: string;
   socials?: {
     linkedin?: string;
     twitter?: string;
     instagram?: string;
   };
   savedPropertyIds?: string[]; // Array of property IDs that the user has liked/saved
+  name?: string;
 }
 
 export interface Agent {

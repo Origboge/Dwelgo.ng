@@ -3,7 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2, Eye, EyeOff, MapPin } from 'lucide-react';
+import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
 
 export const RegisterPage: React.FC = () => {
   const [role, setRole] = useState<'user' | 'agent'>('user');
@@ -14,7 +15,9 @@ export const RegisterPage: React.FC = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    agencyName: ''
+    agencyName: '',
+    state: '',
+    city: ''
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
@@ -23,6 +26,8 @@ export const RegisterPage: React.FC = () => {
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const availableCities = formData.state ? NIGERIA_LOCATIONS[formData.state as keyof typeof NIGERIA_LOCATIONS] || [] : [];
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -41,7 +46,7 @@ export const RegisterPage: React.FC = () => {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isLoading]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -202,6 +207,63 @@ export const RegisterPage: React.FC = () => {
               placeholder="Phone number"
               icon={<Phone size={18} />}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <label htmlFor="state" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">State</label>
+                <div className="relative">
+                  <select
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-zillow-500 focus:border-zillow-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white appearance-none"
+                    required
+                  >
+                    <option value="">Select State</option>
+                    {Object.keys(NIGERIA_LOCATIONS).map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin size={18} className="text-gray-400" />
+                  </div>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                <label htmlFor="city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City</label>
+                <div className="relative">
+                  <select
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-zillow-500 focus:border-zillow-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white appearance-none"
+                    required
+                    disabled={!formData.state}
+                  >
+                    <option value="">Select City</option>
+                    {availableCities.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin size={18} className="text-gray-400" />
+                  </div>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {role === 'agent' && (
               <div className="p-4 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50">

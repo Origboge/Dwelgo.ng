@@ -279,6 +279,17 @@ class PropertyService {
             return [];
         }
     }
+
+    async getSuggestedProperties(params: { city?: string, state?: string, propertyType?: string, excludeId?: string, limit?: number }): Promise<Property[]> {
+        try {
+            const response = await api.get('/properties/suggested', { params });
+            const rawData = response.data.data || [];
+            return rawData.map((p: any) => this.mapBackendProperty(p));
+        } catch (error) {
+            console.error('Failed to fetch suggested properties', error);
+            return [];
+        }
+    }
 }
 
 export const propertyService = new PropertyService();

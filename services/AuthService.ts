@@ -48,7 +48,9 @@ export const AuthService = {
             // Backend might not accept these extra fields yet based on controller, 
             // but we send them in case the model supports them or allows flexible schema
             phone: data.phone,
-            agencyName: data.agencyName
+            agencyName: data.agencyName,
+            state: data.state,
+            city: data.city
         };
 
         const response = await api.post('/auth/register', payload);
@@ -106,7 +108,11 @@ export const AuthService = {
 
     // TODO: Implement backend endpoint for profile update
     updateProfile: async (userId: string, data: Partial<User>): Promise<User> => {
-        const response = await api.put('/auth/me', data);
+        const payload = { ...data };
+        if (data.firstName || data.lastName) {
+            payload.name = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        }
+        const response = await api.put('/auth/me', payload);
         let updatedUser = response.data.user;
         updatedUser = normalizeUser(updatedUser);
 
