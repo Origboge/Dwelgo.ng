@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck, Phone, DollarSign } from 'lucide-react';
+import { Menu, X, Heart, Building2, LogOut, Sun, Moon, LayoutDashboard, ShieldCheck, Phone, DollarSign, Megaphone } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
