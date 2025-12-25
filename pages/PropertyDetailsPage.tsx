@@ -576,7 +576,7 @@ export const PropertyDetailsPage: React.FC = () => {
                                                     className={`${star <= Math.round(property.agent.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
                                                 />
                                             ))}
-                                            <span className="text-xs text-slate-500 ml-1 font-medium">({property.agent.rating || 0})</span>
+                                            <span className="text-xs text-slate-500 ml-1 font-medium">({Number(property.agent.rating || 0).toFixed(1)})</span>
                                         </div>
                                     </div>
                                 </div>
@@ -619,7 +619,7 @@ export const PropertyDetailsPage: React.FC = () => {
                                 {/* Email Button */}
                                 <a
                                     href={`mailto:${property.agent.email}`}
-                                    className="flex items-center justify-center gap-2 w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-md font-bold transition-colors border border-gray-200 dark:border-slate-700"
+                                    className="hidden sm:flex items-center justify-center gap-2 w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-md font-bold transition-colors border border-gray-200 dark:border-slate-700"
                                 >
                                     <Mail size={20} /> Email Agent
                                 </a>

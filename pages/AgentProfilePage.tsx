@@ -11,7 +11,7 @@ import { Input } from '../components/Input';
 import { useAuth } from '../context/AuthContext';
 import { getWhatsAppUrl } from '../utils/format';
 import {
-    Phone, Mail, MapPin, Award, Star, Globe, Linkedin, Twitter, Instagram, ShieldCheck,
+    Phone, Mail, MapPin, Award, Star, ShieldCheck,
     ArrowLeft, ArrowRight, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
     DollarSign, Home, CheckSquare, Maximize, BarChart3, Users, MousePointerClick, Crosshair, MessageCircle, Camera,
     CheckCircle2, AlertTriangle, Edit, BadgeCheck, Trash2, Check
@@ -736,7 +736,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
                                 <div className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Rating</div>
                                 <div className="text-slate-900 dark:text-white font-black text-lg flex items-center justify-center gap-1">
-                                    <Star className="text-yellow-500 fill-yellow-500" size={16} /> {agent.rating}
+                                    <Star className="text-yellow-500 fill-yellow-500" size={16} /> {agent.rating?.toFixed(1) || '0.0'}
                                 </div>
                             </div>
                             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
@@ -755,19 +755,19 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
 
                         {/* Contact Info (if not owner) */}
                         {!isOwner && user && (
-                            <div className="mt-6 flex flex-wrap gap-3">
-                                <a href={`tel:${agent.phone}`} className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full font-bold hover:opacity-90 transition-opacity text-sm">
+                            <div className="mt-6 flex flex-row gap-3 w-full max-w-md">
+                                <a href={`tel:${agent.phone}`} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full font-bold hover:opacity-90 transition-opacity text-sm shadow-lg whitespace-nowrap">
                                     <Phone size={16} /> Call
                                 </a>
                                 <a
                                     href={getWhatsAppUrl(agent.phone, `Hi ${agent.firstName}, I saw your profile on Dwelgo.ng and would like to inquire about your listings.`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-green-500 text-white rounded-full font-bold hover:bg-green-600 transition-colors text-sm"
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-full font-bold hover:bg-green-600 transition-colors text-sm shadow-lg whitespace-nowrap"
                                 >
                                     <MessageCircle size={16} /> WhatsApp
                                 </a>
-                                <a href={`mailto:${agent.email || user.email}`} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors text-sm">
+                                <a href={`mailto:${agent.email || user.email}`} className="hidden sm:flex flex-1 items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors text-sm shadow-lg whitespace-nowrap">
                                     <Mail size={16} /> Email
                                 </a>
                             </div>
@@ -1153,12 +1153,6 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                     </div>
                                 </div>
                             )}
-                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex gap-6 text-slate-400 justify-center">
-                                <Linkedin className="cursor-pointer hover:text-zillow-600 transition-colors" size={20} />
-                                <Twitter className="cursor-pointer hover:text-zillow-600 transition-colors" size={20} />
-                                <Instagram className="cursor-pointer hover:text-zillow-600 transition-colors" size={20} />
-                                <Globe className="cursor-pointer hover:text-zillow-600 transition-colors" size={20} />
-                            </div>
                         </div>
                     </div>
 
