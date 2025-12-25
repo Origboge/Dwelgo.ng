@@ -35,6 +35,7 @@ class AgentService {
             lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || '',
             email: user.email,
             phone: data.phone || user.phone,
+            whatsapp: data.whatsapp || user.whatsapp,
             avatar: user.avatar || data.avatar || '',
             agencyName: data.businessName || data.agencyName || 'Independent',
             rating: typeof data.rating === 'object' ? (data.rating.average || 0) : (data.rating || 0),

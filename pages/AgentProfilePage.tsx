@@ -9,6 +9,7 @@ import { PropertyCard } from '../components/PropertyCard';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useAuth } from '../context/AuthContext';
+import { getWhatsAppUrl } from '../utils/format';
 import {
     Phone, Mail, MapPin, Award, Star, Globe, Linkedin, Twitter, Instagram, ShieldCheck,
     ArrowLeft, ArrowRight, Building2, Plus, X, UploadCloud, Lock, Image as ImageIcon,
@@ -86,6 +87,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         phone: user?.phone || '',
+        whatsapp: user?.whatsapp || '',
         bio: user?.bio || '',
         licenseNumber: user?.licenseNumber || '',
         experience: user?.experience || '',
@@ -744,13 +746,21 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
 
                         {/* Contact Info (if not owner) */}
                         {!isOwner && user && (
-                            <div className="mt-6 flex gap-3">
+                            <div className="mt-6 flex flex-wrap gap-3">
                                 <a href={`tel:${agent.phone}`} className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full font-bold hover:opacity-90 transition-opacity text-sm">
-                                    <Phone size={16} /> Call Agent
+                                    <Phone size={16} /> Call
                                 </a>
-                                <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors text-sm">
-                                    <Mail size={16} /> Message
-                                </button>
+                                <a
+                                    href={getWhatsAppUrl(agent.phone, `Hi ${agent.firstName}, I saw your profile on Dwelgo.ng and would like to inquire about your listings.`)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-green-500 text-white rounded-full font-bold hover:bg-green-600 transition-colors text-sm"
+                                >
+                                    <MessageCircle size={16} /> WhatsApp
+                                </a>
+                                <a href={`mailto:${agent.email || user.email}`} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors text-sm">
+                                    <Mail size={16} /> Email
+                                </a>
                             </div>
                         )}
                     </div>
@@ -958,6 +968,24 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                 </div>
                                 <div>
                                     <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
+                                        <MessageCircle size={14} className="text-green-500" /> WhatsApp Number
+                                    </p>
+                                    {isEditingProfile ? (
+                                        <input
+                                            value={profileForm.whatsapp}
+                                            onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
+                                            placeholder="e.g. 08012345678"
+                                            className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-zillow-600 outline-none"
+                                            required
+                                        />
+                                    ) : (
+                                        <p className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                            {user?.whatsapp || agent.whatsapp || user?.phone || agent.phone || "N/A"}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm uppercase font-bold text-slate-400 mb-2 tracking-wider flex items-center gap-2">
                                         <MapPin size={14} /> Location (City & State)
                                     </p>
                                     {isEditingProfile ? (
@@ -1029,6 +1057,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                         firstName: profileForm.firstName,
                                                         lastName: profileForm.lastName,
                                                         phone: profileForm.phone,
+                                                        whatsapp: profileForm.whatsapp,
                                                         bio: profileForm.bio,
                                                         licenseNumber: profileForm.licenseNumber,
                                                         experience: Number(profileForm.experience),
@@ -1052,6 +1081,7 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                                                     firstName: user?.firstName || '',
                                                     lastName: user?.lastName || '',
                                                     phone: user?.phone || '',
+                                                    whatsapp: user?.whatsapp || '',
                                                     bio: user?.bio || agent.bio || '',
                                                     licenseNumber: user?.licenseNumber || agent.licenseNumber || '',
                                                     experience: user?.experience || agent.experience || '',
@@ -1635,6 +1665,6 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

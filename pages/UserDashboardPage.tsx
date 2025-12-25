@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { propertyService } from '../services/PropertyService';
 import { PropertyCard } from '../components/PropertyCard';
 import { Button } from '../components/Button';
-import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard, Trash2, AlertTriangle, X, Edit, Check } from 'lucide-react';
+import { User, Mail, Phone, MapPin, CheckCircle2, ShieldAlert, Camera, LayoutDashboard, Trash2, AlertTriangle, X, Edit, Check, MessageCircle } from 'lucide-react';
 import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
 import { Property } from '../types';
 
@@ -23,6 +23,7 @@ export const UserDashboardPage: React.FC = () => {
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         phone: user?.phone || '',
+        whatsapp: user?.whatsapp || '',
         state: user?.state || '',
         city: user?.city || ''
     });
@@ -109,6 +110,7 @@ export const UserDashboardPage: React.FC = () => {
                 firstName: profileForm.firstName,
                 lastName: profileForm.lastName,
                 phone: profileForm.phone,
+                whatsapp: profileForm.whatsapp,
                 state: profileForm.state,
                 city: profileForm.city
             });
@@ -294,6 +296,27 @@ export const UserDashboardPage: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
+
+                                {user.role === 'agent' && (
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">WhatsApp Number</label>
+                                        {isEditingProfile ? (
+                                            <input
+                                                type="tel"
+                                                className="w-full p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={profileForm.whatsapp}
+                                                onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
+                                                placeholder="e.g. 08012345678"
+                                                required
+                                            />
+                                        ) : (
+                                            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                                <MessageCircle size={16} className="text-green-500" />
+                                                <span>{user.whatsapp || user.phone || 'Not set'}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Location</label>

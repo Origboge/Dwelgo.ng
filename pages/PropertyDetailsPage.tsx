@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X, Sparkles, MoreHorizontal, Send } from 'lucide-react';
 import { agentService } from '../services/AgentService';
 import { PropertyCard } from '../components/PropertyCard';
+import { getWhatsAppUrl } from '../utils/format';
 import { ScrollReveal } from '../components/ScrollReveal';
 
 // Default placeholder if image is missing
@@ -601,15 +602,17 @@ export const PropertyDetailsPage: React.FC = () => {
                                     <Phone size={20} /> Call Agent
                                 </a>
 
+
                                 {/* WhatsApp Button */}
                                 <a
-                                    href={`https://wa.me/${property.agent.phone.replace(/[^0-9]/g, '')}`}
+                                    href={getWhatsAppUrl(property.agent.whatsapp || property.agent.phone, `Hi, I'm interested in "${property.title}" listed on Dwelgo.ng`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-md font-bold transition-colors shadow-sm"
                                 >
                                     <MessageCircle size={20} /> WhatsApp
                                 </a>
+
 
                                 {/* Email Button */}
                                 <a

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2, Eye, EyeOff, MapPin } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Building, Phone, AlertCircle, Building2, Eye, EyeOff, MapPin, MessageCircle } from 'lucide-react';
 import { NIGERIA_LOCATIONS } from '../nigeriaLocations';
 
 export const RegisterPage: React.FC = () => {
@@ -13,6 +13,7 @@ export const RegisterPage: React.FC = () => {
     lastName: '',
     email: '',
     phone: '',
+    whatsapp: '',
     password: '',
     confirmPassword: '',
     agencyName: '',
@@ -206,9 +207,23 @@ export const RegisterPage: React.FC = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="Phone number"
+              placeholder="e.g. 08012345678"
               icon={<Phone size={18} />}
+              required
             />
+
+            {role === 'agent' && (
+              <Input
+                label="WhatsApp Number"
+                type="tel"
+                name="whatsapp"
+                value={formData.whatsapp}
+                onChange={handleChange}
+                placeholder="e.g. 08012345678"
+                icon={<MessageCircle size={18} className="text-green-500" />}
+                required
+              />
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">

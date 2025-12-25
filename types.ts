@@ -9,6 +9,7 @@ export interface User {
   isVerified?: boolean;
   agencyName?: string;
   phone?: string;
+  whatsapp?: string;
   bio?: string;
   licenseNumber?: string;
   experience?: number;
@@ -31,6 +32,7 @@ export interface Agent {
   lastName: string;
   email: string;
   phone: string;
+  whatsapp?: string;
   avatar: string;
   agencyName: string;
   rating: number;
