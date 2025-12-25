@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+    <div className="pt-20 min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
       {/* Global Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
@@ -73,10 +73,7 @@ export const LoginPage: React.FC = () => {
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-slate-900">
         <img
-          src={activeTab === 'user'
-            ? "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
-            : "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
-          }
+          src="/images/sign-up.jpg"
           alt="Modern Property"
           className="w-full h-full object-cover opacity-60 transition-opacity duration-500"
         />

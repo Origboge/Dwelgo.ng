@@ -45,11 +45,11 @@ export const ResetPasswordPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+        <div className="pt-20 min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
             {/* Left Side - Image */}
             <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-slate-900">
                 <img
-                    src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+                    src="/images/sign-up.jpg"
                     alt="Modern Apartment"
                     className="w-full h-full object-cover opacity-60"
                 />

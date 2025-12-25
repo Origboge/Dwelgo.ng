@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Property } from '../types';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
+import { propertyService } from '../services/PropertyService';
 import { useAuth } from '../context/AuthContext';
 
 // Image optimization: add responsive sizing and auto-format for Cloudinary and Unsplash
@@ -54,9 +55,11 @@ interface PropertyCardProps {
 export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
-  const { user, updateProfile } = useAuth();
+  const [isLiking, setIsLiking] = useState(false);
+  const [isLikedInternal, setIsLikedInternal] = useState<boolean | null>(null);
+  const { user, updateUserLocally } = useAuth();
 
-  const isLiked = user?.savedPropertyIds?.includes(property.id);
+  const isLiked = isLikedInternal !== null ? isLikedInternal : user?.savedPropertyIds?.includes(property.id);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(price);
@@ -70,14 +73,34 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
       return;
     }
 
+    const wasLiked = isLiked;
+    setIsLikedInternal(!wasLiked);
+
+    if (!wasLiked) {
+      setIsLiking(true);
+      setTimeout(() => setIsLiking(false), 400);
+    }
+
     const currentSaved = user.savedPropertyIds || [];
     let newSaved;
-    if (isLiked) {
+    if (wasLiked) {
       newSaved = currentSaved.filter(id => id !== property.id);
     } else {
       newSaved = [...currentSaved, property.id];
     }
-    await updateProfile({ savedPropertyIds: newSaved });
+
+    try {
+      if (wasLiked) {
+        await propertyService.unsaveProperty(property.id);
+      } else {
+        await propertyService.saveProperty(property.id);
+      }
+      // Update local context SILENTLY (no loading overlay)
+      updateUserLocally({ savedPropertyIds: newSaved });
+    } catch (err) {
+      console.error("Failed to update like status in card", err);
+      setIsLikedInternal(wasLiked);
+    }
   };
 
   return (
@@ -113,7 +136,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         <div className="absolute top-3 right-3 z-10">
           <button
             onClick={handleLike}
-            className={`p-2 rounded-full shadow-sm transition-all duration-200 ${isLiked ? 'bg-red-50 text-red-500' : 'bg-white/80 hover:bg-white text-slate-400 hover:text-red-500'}`}
+            className={`p-2 rounded-full shadow-sm transition-all duration-200 ${isLiked ? 'bg-red-50 text-red-500' : 'bg-white/80 hover:bg-white text-slate-400 hover:text-red-500'} ${isLiking ? 'animate-heart-pop' : ''}`}
           >
             <Heart size={18} className={isLiked ? "fill-current" : ""} />
           </button>

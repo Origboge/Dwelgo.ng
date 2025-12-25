@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { propertyService } from '../services/PropertyService';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X, Sparkles } from 'lucide-react';
+import { MapPin, Share2, CheckCircle2, Phone, MessageCircle, Mail, AlertTriangle, ChevronLeft, ChevronRight, Heart, BedDouble, Bath, Move, Star, X, Sparkles, MoreHorizontal, Send } from 'lucide-react';
 import { agentService } from '../services/AgentService';
 import { PropertyCard } from '../components/PropertyCard';
 import { ScrollReveal } from '../components/ScrollReveal';
@@ -24,7 +24,7 @@ const optimizeCloudinaryUrl = (url: string, width: number = 800): string => {
 export const PropertyDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { user, updateProfile } = useAuth();
+    const { user, updateUserLocally } = useAuth();
 
     // Data State
     const [property, setProperty] = useState<any | null>(null);
@@ -38,6 +38,50 @@ export const PropertyDetailsPage: React.FC = () => {
     const [ratingValue, setRatingValue] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLiking, setIsLiking] = useState(false); // For animation trigger
+    const [isLikedInternal, setIsLikedInternal] = useState<boolean | null>(null); // For optimistic UI
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(price);
+    };
+
+    // Meta tags and dynamic title for social sharing
+    useEffect(() => {
+        if (!property) return;
+
+        const title = `${property.title} | Dwelgo.ng`;
+        const description = `${property.bedrooms} Bed, ${property.bathrooms} Bath property in ${property.city}, ${property.state}. Asking Price: ${formatPrice(property.price)}`;
+        const imageUrl = property.imageUrl;
+        const url = window.location.href;
+
+        // Update document title
+        document.title = title;
+
+        // Update meta tags dynamically
+        const updateMeta = (selector: string, content: string) => {
+            let el = document.querySelector(selector);
+            if (!el) {
+                el = document.createElement('meta');
+                if (selector.includes('property')) {
+                    el.setAttribute('property', selector.split('"')[1]);
+                } else {
+                    el.setAttribute('name', selector.split('"')[1]);
+                }
+                document.head.appendChild(el);
+            }
+            el.setAttribute('content', content);
+        };
+
+        updateMeta('meta[property="og:title"]', title);
+        updateMeta('meta[property="og:description"]', description);
+        updateMeta('meta[property="og:image"]', imageUrl || '');
+        updateMeta('meta[property="og:url"]', url);
+        updateMeta('meta[name="twitter:card"]', 'summary_large_image');
+        updateMeta('meta[name="description"]', description);
+
+    }, [property]);
 
     // Prevent scroll jump during submission
     useEffect(() => {
@@ -50,7 +94,7 @@ export const PropertyDetailsPage: React.FC = () => {
     }, [isSubmitting]);
 
     // Derived State
-    const isLiked = property && user?.savedPropertyIds?.includes(property.id);
+    const isLiked = isLikedInternal !== null ? isLikedInternal : (property && user?.savedPropertyIds?.includes(property.id));
 
     const handleSubmitRating = async () => {
         if (!property || ratingValue === 0) return;
@@ -83,19 +127,82 @@ export const PropertyDetailsPage: React.FC = () => {
 
         if (!property) return;
 
+        // Optimistic UI: Update state immediately
+        const wasLiked = isLiked;
+        setIsLikedInternal(!wasLiked);
+
+        // Trigger animation
+        if (!wasLiked) {
+            setIsLiking(true);
+            setTimeout(() => setIsLiking(false), 400);
+        }
+
+        // Update local property count for instant feedback
+        if (property) {
+            const currentLikes = property.likes || 0;
+            setProperty({
+                ...property,
+                likes: !wasLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
+            });
+        }
+
         const currentSaved = user.savedPropertyIds || [];
         let newSaved;
-        if (isLiked) {
+        if (wasLiked) {
             newSaved = currentSaved.filter(id => id !== property.id);
         } else {
             newSaved = [...currentSaved, property.id];
         }
 
-        setIsSubmitting(true);
+        // We don't set isSubmitting(true) here because we want it to be instant.
+        // If the API fails, we'll revert.
         try {
-            await updateProfile({ savedPropertyIds: newSaved });
-        } finally {
-            setIsSubmitting(false);
+            if (wasLiked) {
+                await propertyService.unsaveProperty(property.id);
+            } else {
+                await propertyService.saveProperty(property.id);
+            }
+            // Update local context SILENTLY (no loading overlay)
+            updateUserLocally({ savedPropertyIds: newSaved });
+        } catch (error) {
+            console.error("Failed to update like status", error);
+            // Revert state if it failed
+            setIsLikedInternal(wasLiked);
+            setProperty(property); // property still has the old state from closure
+        }
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const shareLinks = {
+        whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this property: ${property?.title}\n${window.location.href}`)}`,
+        twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`Check out this amazing property on Dwelgo: ${property?.title}`)}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+        telegram: `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`Check out this property: ${property?.title}`)}`,
+        email: `mailto:?subject=${encodeURIComponent(`${property?.title}`)}&body=${encodeURIComponent(`Check out this property on Dwelgo.ng: ${window.location.href}`)}`
+    };
+
+    const handleNativeShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${property?.title} | Dwelgo.ng`,
+                    text: `${property?.bedrooms} Bed, ${property?.bathrooms} Bath property in ${property?.city}, ${property?.state}`,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                // AbortError happens when user cancels, we ignore that
+                if ((err as any).name !== 'AbortError') {
+                    handleCopyLink(); // Fallback if it fails for other reasons
+                }
+            }
+        } else {
+            // Fallback for browsers that don't support Web Share API (most desktop browsers)
+            handleCopyLink();
         }
     };
 
@@ -158,9 +265,6 @@ export const PropertyDetailsPage: React.FC = () => {
         );
     }
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(price);
-    };
 
     const handleMapClick = () => {
         if (property.latitude && property.longitude) {
@@ -323,11 +427,25 @@ export const PropertyDetailsPage: React.FC = () => {
                                                 {property.status === 'Sold' ? 'Sold' : property.listingType}
                                             </span>
                                         </div>
-                                        <div className="flex gap-1.5">
-                                            <button onClick={handleLike} className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${isLiked ? 'bg-pink-50 border-pink-200 text-pink-500' : 'border-gray-200 dark:border-gray-700 text-slate-400 hover:text-pink-500 bg-white dark:bg-slate-800'}`}>
+                                        <div className="flex gap-1.5 relative">
+                                            {/* Login Tooltip */}
+                                            {showLoginTooltip && (
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold py-1.5 px-3 rounded-md shadow-lg whitespace-nowrap z-20 animate-fade-in-up">
+                                                    Sign up to like properties
+                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"></div>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={handleLike}
+                                                className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${isLiked ? 'bg-pink-50 border-pink-200 text-pink-500' : 'border-gray-200 dark:border-gray-700 text-slate-400 hover:text-pink-500 bg-white dark:bg-slate-800'} ${isLiking ? 'animate-heart-pop' : ''}`}
+                                            >
                                                 <Heart className={isLiked ? "fill-current" : ""} size={16} />
                                             </button>
-                                            <button className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 transition-all">
+                                            <button
+                                                onClick={() => setIsShareModalOpen(true)}
+                                                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 transition-all"
+                                            >
                                                 <Share2 size={16} />
                                             </button>
                                         </div>
@@ -357,12 +475,29 @@ export const PropertyDetailsPage: React.FC = () => {
                                     </div>
 
                                     {/* Address - Compact */}
-                                    <div className="flex items-center gap-2 text-sm">
+                                    <div className="flex items-center gap-2 text-sm mb-4">
                                         <MapPin size={14} className="text-blue-500 shrink-0" />
                                         <span className="font-medium text-slate-700 dark:text-slate-300">{property.address}, {property.city}, {property.state}</span>
                                         <button onClick={handleMapClick} className="ml-auto text-xs font-semibold text-blue-600 hover:underline whitespace-nowrap">
                                             View on Map
                                         </button>
+                                    </div>
+
+                                    {/* Stats Row - Zillow Style */}
+                                    <div className="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400 border-t border-gray-100 dark:border-gray-800 pt-3">
+                                        <span>
+                                            <span className="font-bold text-slate-900 dark:text-white">
+                                                {Math.max(1, Math.floor((new Date().getTime() - new Date(property.addedAt).getTime()) / (1000 * 3600 * 24)))}
+                                            </span> days on Dwelgo
+                                        </span>
+                                        <div className="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+                                        <span>
+                                            <span className="font-bold text-slate-900 dark:text-white">{property.views?.toLocaleString() || 0}</span> views
+                                        </span>
+                                        <div className="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+                                        <span>
+                                            <span className="font-bold text-slate-900 dark:text-white">{property.likes || 0}</span> likes
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -586,6 +721,80 @@ export const PropertyDetailsPage: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Share Modal */}
+            {isShareModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-zoom-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold">Share Property</h3>
+                            <button onClick={() => setIsShareModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-6 mb-8">
+                            <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-[#25D366]/10 rounded-2xl flex items-center justify-center text-[#25D366] transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm hover:shadow-md">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.41 0 .01 5.399 0 12.039c0 2.123.554 4.197 1.608 6.023L0 24l6.117-1.605a11.803 11.803 0 005.925 1.586h.005c6.639 0 12.039-5.402 12.042-12.041a11.83 11.83 0 00-3.535-8.498" />
+                                    </svg>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">WhatsApp</span>
+                            </a>
+                            <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-black/10 dark:bg-white/10 rounded-2xl flex items-center justify-center text-black dark:text-white transition-all group-hover:scale-110 group-hover:-rotate-3 shadow-sm hover:shadow-md">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                                    </svg>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">X</span>
+                            </a>
+                            <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-[#1877F2]/10 rounded-2xl flex items-center justify-center text-[#1877F2] transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm hover:shadow-md">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                    </svg>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">Facebook</span>
+                            </a>
+                            <a href={shareLinks.telegram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-[#0088cc]/10 rounded-2xl flex items-center justify-center text-[#0088cc] transition-all group-hover:scale-110 group-hover:-rotate-3 shadow-sm hover:shadow-md">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+                                        <path d="M11.944 0C5.346 0 0 5.346 0 11.944s5.346 11.944 11.944 11.944 11.944-5.346 11.944-11.944S18.542 0 11.944 0zm5.812 8.356c-.195 1.543-.884 5.356-1.258 7.373-.158.855-.472 1.141-.776 1.169-.661.061-1.162-.439-1.802-.859-1.002-.657-1.568-1.066-2.541-1.706-1.124-.74-0.395-1.146.245-1.809.168-.173 3.078-2.822 3.134-3.058.007-.03.013-.142-.053-.2-.066-.058-.163-.038-.233-.022-.099.022-1.684 1.071-4.755 3.141-.45.31-.856.462-1.218.455-.399-.009-1.168-.225-1.739-.41-.703-.227-1.261-.347-1.213-.733.025-.201.302-.408.831-.621 3.257-1.417 5.429-2.353 6.516-2.809 3.102-1.303 3.746-1.53 4.166-1.538.092-.002.298.021.432.13.113.092.144.215.151.31.007.094.013.298-.013.431z" />
+                                    </svg>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">Telegram</span>
+                            </a>
+                            <a href={shareLinks.email} className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/10 rounded-2xl flex items-center justify-center text-amber-600 transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm hover:shadow-md">
+                                    <Mail size={28} />
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">Email</span>
+                            </a>
+                            <button onClick={handleNativeShare} className="flex flex-col items-center gap-2 group">
+                                <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-600 dark:text-slate-300 transition-all group-hover:scale-110 group-hover:-rotate-3 shadow-sm hover:shadow-md">
+                                    <MoreHorizontal size={28} />
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">More</span>
+                            </button>
+                            <button onClick={handleCopyLink} className="flex flex-col items-center gap-2 group">
+                                <div className={`w-14 h-14 ${copied ? 'bg-green-100 text-green-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'} rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 shadow-sm hover:shadow-md`}>
+                                    {copied ? <CheckCircle2 size={28} /> : <Share2 size={24} />}
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-tight text-slate-600 dark:text-slate-400">{copied ? 'Copied' : 'Copy Link'}</span>
+                            </button>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-between gap-3 border border-slate-200 dark:border-slate-700">
+                            <span className="text-xs text-slate-500 truncate flex-1 font-medium">{window.location.href}</span>
+                            <button onClick={handleCopyLink} className="text-xs font-bold text-zillow-600 hover:text-zillow-700 whitespace-nowrap px-2">
+                                {copied ? 'Copied' : 'Copy'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

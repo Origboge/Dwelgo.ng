@@ -28,11 +28,11 @@ export const ForgotPasswordPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+        <div className="pt-20 min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
             {/* Left Side - Image */}
             <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-slate-900">
                 <img
-                    src="https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+                    src="/images/sign-up.jpg"
                     alt="Modern Interior"
                     className="w-full h-full object-cover opacity-60"
                 />

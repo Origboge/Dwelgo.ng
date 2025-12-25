@@ -251,16 +251,13 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             }
 
             Array.from(files).forEach((file: any) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPropertyImages(prev => [...prev, {
-                        id: `new-${Date.now()}-${Math.random()}`,
-                        url: reader.result as string, // Preview URL (Base64)
-                        file: file,
-                        isNew: true
-                    }]);
-                };
-                reader.readAsDataURL(file as Blob);
+                const objectUrl = URL.createObjectURL(file);
+                setPropertyImages(prev => [...prev, {
+                    id: `new-${Date.now()}-${Math.random()}`,
+                    url: objectUrl, // Lightweight preview URL
+                    file: file,
+                    isNew: true
+                }]);
             });
             if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
         }
@@ -315,12 +312,9 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
                 e.target.value = '';
                 return;
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setVideoPreview(reader.result as string);
-                setVideoFile(file);
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setVideoPreview(objectUrl);
+            setVideoFile(file);
             if (errors.video) setErrors(prev => ({ ...prev, video: '' }));
         }
     };

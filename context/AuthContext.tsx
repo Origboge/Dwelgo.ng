@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  updateUserLocally: (data: Partial<User>) => void;
   deleteAccount: () => Promise<void>;
 }
 
@@ -100,6 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserLocally = (data: Partial<User>) => {
+    if (!user) return;
+    setUser(prev => prev ? { ...prev, ...data } : null);
+  };
+
   const deleteAccount = async () => {
     setIsLoading(true);
     try {
@@ -120,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       resetPassword,
       updateProfile,
+      updateUserLocally,
       deleteAccount
     }}>
       {children}

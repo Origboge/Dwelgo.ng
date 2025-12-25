@@ -100,7 +100,7 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+    <div className="pt-20 min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
       {/* Global Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
@@ -116,7 +116,7 @@ export const RegisterPage: React.FC = () => {
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-blue-900">
         <img
-          src="https://images.unsplash.com/photo-1582407947304-fd86f028f716?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
+          src="/images/sign-up.jpg"
           alt="Modern House"
           className="w-full h-full object-cover opacity-60 mix-blend-overlay"
         />

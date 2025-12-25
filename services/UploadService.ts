@@ -49,14 +49,12 @@ class UploadService {
             } catch (error: any) {
                 console.error('Direct upload failed for file:', file.name, error);
 
-                // Fallback to our backend if direct fails (for small files or local dev)
-                if (file.size < 4 * 1024 * 1024) {
-                    console.log('Attempting fallback upload via backend...');
-                    const secondaryResult = await this.uploadViaBackend([file], folder);
-                    results.push(secondaryResult[0]);
-                } else {
-                    throw new Error(`Failed to upload ${file.name}. File might be too large for Vercel and direct upload failed.`);
-                }
+                // CRITICAL: We NO LONGER fallback to backend for files, 
+                // because it causes "Double Billing" on Vercel bandwidth.
+                // If direct upload fails, we must tell the user.
+
+                const errorMessage = error.response?.data?.error?.message || error.message;
+                throw new Error(`Direct upload failed for ${file.name}: ${errorMessage}. Please check your internet connection.`);
             }
         }
 

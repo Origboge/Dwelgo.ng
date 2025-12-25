@@ -135,21 +135,21 @@ export const HomePage: React.FC = () => {
     <div className="bg-white dark:bg-[#0a0a0a]">
 
       {/* 1. HERO SECTION */}
-      <div className="relative h-[600px] w-full overflow-hidden">
-        {/* Background Layer - Switched to a brighter, clearer image */}
+      <div className="relative h-[650px] md:h-[800px] w-full overflow-hidden">
+        {/* Background Layer - Removed initial scale to fix "zoomed in" issue */}
         <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-linear scale-105 hover:scale-110 z-0"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-linear hover:scale-105 z-0"
           style={{
-            backgroundImage: 'url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1280&q=70")',
+            backgroundImage: 'url("/images/hero-bg.jpg")',
           }}
         />
         {/* Lighter overlay - subtle flat black to ensure text pops but image is bright */}
-        <div className="absolute inset-0 bg-black/20 z-0" />
+        <div className="absolute inset-0 bg-black/30 z-0" />
 
-        {/* Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 pt-10">
+        {/* Content - Adjusted padding and positioning for mobile breathing room */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 pt-16 md:pt-24">
           <ScrollReveal animation="fade-in-right">
-            <h1 className="text-5xl md:text-7xl font-serif font-bold text-white mb-4 drop-shadow-xl tracking-tight">
+            <h1 className="text-4xl md:text-7xl font-serif font-bold text-white mb-4 drop-shadow-2xl tracking-tight">
               Experience Living
             </h1>
           </ScrollReveal>
@@ -162,24 +162,27 @@ export const HomePage: React.FC = () => {
           {/* Search Box Container */}
           <ScrollReveal animation="fade-in-up" delay={400} className="w-full max-w-4xl px-4">
             <div className="w-full bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-3 md:p-4 border border-white/20">
-              <div className="flex flex-col md:flex-row gap-3 relative">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  navigate('/properties', { state: { searchTerm: searchQuery } });
+                }}
+                className="flex flex-col md:flex-row gap-3 relative"
+              >
                 <div className="flex-1 relative group">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    onFocus={(e) => {
-                      e.target.readOnly = false;
+                    onFocus={() => {
                       if (searchQuery.length > 1) setShowSuggestions(true);
                     }}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder="Enter an address, neighborhood, city, or ZIP code"
                     className="w-full h-14 px-5 rounded-md border border-gray-200 bg-white text-lg text-slate-900 placeholder:text-gray-400 focus:border-zillow-600 focus:ring-2 focus:ring-zillow-100 outline-none transition-all"
-                    onKeyDown={(e) => e.key === 'Enter' && navigate('/properties', { state: { searchTerm: searchQuery } })}
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
-                    readOnly
                   />
 
                   {/* Suggestions Dropdown */}
@@ -203,14 +206,14 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
                 <Button
+                  type="submit"
                   variant="primary"
                   className="h-14 w-full md:w-auto px-10 rounded-md text-lg shadow-lg hover:shadow-zillow-600/30"
-                  onClick={() => navigate('/properties', { state: { searchTerm: searchQuery } })}
                 >
                   <span className="hidden md:inline">Search</span>
                   <span className="md:hidden">Search Homes</span>
                 </Button>
-              </div>
+              </form>
             </div>
           </ScrollReveal>
         </div>
@@ -318,7 +321,7 @@ export const HomePage: React.FC = () => {
             {/* Background Image Overlay */}
             <div className="absolute inset-0 z-0">
               <img
-                src="https://images.unsplash.com/photo-1556155092-490a1ba16284?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=70"
+                src="/images/agent-cta.jpg"
                 alt="Agent Background"
                 className="w-full h-full object-cover opacity-20 mix-blend-overlay"
               />
@@ -355,7 +358,7 @@ export const HomePage: React.FC = () => {
               <div className="hidden md:block pr-12">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 transform rotate-2 hover:rotate-0 transition-transform duration-500">
                   <img
-                    src="https://images.unsplash.com/photo-1556155092-490a1ba16284?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=70"
+                    src="/images/agent-cta.jpg"
                     alt="Agent Dashboard"
                     className="w-full h-auto"
                   />
@@ -392,7 +395,7 @@ export const HomePage: React.FC = () => {
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=70"
+              src="/images/advertise-cta.jpg"
               alt="Ad Background"
               className="w-full h-full object-cover opacity-10 mix-blend-luminosity"
             />
@@ -423,7 +426,7 @@ export const HomePage: React.FC = () => {
               <div className="hidden lg:block md:w-2/5">
                 <div className="relative h-[400px] w-full rounded-3xl overflow-hidden shadow-3xl shadow-black/50 border border-white/20 group">
                   <img
-                    src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=70"
+                    src="/images/advertise-cta.jpg"
                     alt="Advertising Dashboard"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />

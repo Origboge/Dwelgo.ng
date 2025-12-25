@@ -13,7 +13,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const isAuthPage = ['/login', '/register'].includes(location.pathname);
   const isHomePage = location.pathname === '/';
 
   useEffect(() => {
@@ -27,14 +26,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
-
-  if (isAuthPage) {
-    return (
-      <div className="min-h-screen flex flex-col font-sans relative text-slate-900 dark:text-white bg-gray-50 dark:bg-slate-950">
-        {children}
-      </div>
-    );
-  }
 
   const handleSellClick = () => {
     if (!user) {

@@ -69,6 +69,8 @@ export interface Property {
   status: 'Available' | 'Pending' | 'Sold' | 'Rented' | 'Archived';
   description: string;
   addedAt: string;
+  views?: number;
+  likes?: number;
   latitude?: number;
   longitude?: number;
   priceFrequency?: 'Year' | 'Month' | 'Night';

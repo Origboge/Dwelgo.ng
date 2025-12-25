@@ -56,6 +56,8 @@ class PropertyService {
             features: p.features || [],
             status: p.status,
             addedAt: p.createdAt,
+            views: p.views || 0,
+            likes: p.likes?.length || 0,
             latitude: p.location?.coordinates?.[1] || p.latitude,
             longitude: p.location?.coordinates?.[0] || p.longitude,
             priceFrequency: p.priceFrequency,
@@ -288,6 +290,26 @@ class PropertyService {
         } catch (error) {
             console.error('Failed to fetch suggested properties', error);
             return [];
+        }
+    }
+
+    async saveProperty(propertyId: string): Promise<any> {
+        try {
+            const response = await api.post('/saved-properties', { propertyId });
+            return response.data;
+        } catch (error) {
+            console.error('Failed to save property', error);
+            throw error;
+        }
+    }
+
+    async unsaveProperty(propertyId: string): Promise<any> {
+        try {
+            const response = await api.delete(`/saved-properties/${propertyId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Failed to unsave property', error);
+            throw error;
         }
     }
 }
