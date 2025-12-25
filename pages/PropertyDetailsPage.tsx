@@ -553,13 +553,15 @@ export const PropertyDetailsPage: React.FC = () => {
                         <div className="sticky top-24">
                             <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none rounded-xl p-6">
                                 <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
-                                    {property.agent.avatar ? (
-                                        <img src={property.agent.avatar} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" alt="Agent" />
-                                    ) : (
-                                        <div className="w-16 h-16 rounded-full bg-zillow-600 text-white flex items-center justify-center text-xl font-bold">
-                                            {property.agent.firstName[0]}
-                                        </div>
-                                    )}
+                                    <div className="cursor-pointer" onClick={() => navigate(`/agents/${property.agent.id}`)}>
+                                        {property.agent.avatar ? (
+                                            <img src={property.agent.avatar} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" alt="Agent" />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-zillow-600 text-white flex items-center justify-center text-xl font-bold">
+                                                {property.agent.firstName[0]}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div>
                                         <div className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-0.5">Listing Agent</div>
                                         <div className="font-bold text-lg text-slate-900 dark:text-white hover:underline cursor-pointer" onClick={() => navigate(`/agents/${property.agent.id}`)}>

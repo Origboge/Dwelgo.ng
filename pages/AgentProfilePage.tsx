@@ -83,6 +83,15 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
     const initialTab = queryParams.get('tab') === 'likes' ? 'likes' : 'listings';
     const [activeTab, setActiveTab] = useState<'listings' | 'likes' | 'sold' | 'archived'>(initialTab as any);
 
+    useEffect(() => {
+        const tab = queryParams.get('tab');
+        if (tab === 'likes') {
+            setActiveTab('likes');
+        } else if (tab === 'listings' || !tab) {
+            setActiveTab('listings');
+        }
+    }, [locationInfo.search]);
+
     const [profileForm, setProfileForm] = useState({
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Property } from '../types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { propertyService } from '../services/PropertyService';
 import { useAuth } from '../context/AuthContext';
@@ -58,6 +58,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [isLikedInternal, setIsLikedInternal] = useState<boolean | null>(null);
   const { user, updateUserLocally } = useAuth();
+  const navigate = useNavigate();
 
   const isLiked = isLikedInternal !== null ? isLikedInternal : user?.savedPropertyIds?.includes(property.id);
 
@@ -197,8 +198,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
             {property.type?.toUpperCase() || 'PROPERTY'}
           </div>
-          <div className="text-[10px] font-bold text-zillow-600">
-            {property.agent?.agencyName?.toUpperCase() || 'AGENT'}
+          <div
+            className="flex flex-col items-end cursor-pointer group/agent"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/agents/${property.agent.id}`);
+            }}
+          >
+            <div className="text-[10px] font-bold text-zillow-600 group-hover/agent:underline">
+              {property.agent?.firstName} {property.agent?.lastName}
+            </div>
+            <div className="text-[9px] text-slate-400 font-medium">
+              {property.agent?.agencyName || 'Agent'}
+            </div>
           </div>
         </div>
       </div>
