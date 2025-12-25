@@ -159,15 +159,15 @@ export const HomePage: React.FC = () => {
             </p>
           </ScrollReveal>
 
-          {/* Search Box Container */}
-          <ScrollReveal animation="fade-in-up" delay={400} className="w-full max-w-4xl px-4">
-            <div className="w-full bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-3 md:p-4 border border-white/20">
+          {/* Search Box Container - Balanced middle ground position */}
+          <ScrollReveal animation="fade-in-up" delay={400} className="w-full max-w-4xl px-4 mt-16 md:mt-28">
+            <div className="w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl shadow-2xl p-2 md:p-3 border border-white/20">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   navigate('/properties', { state: { searchTerm: searchQuery } });
                 }}
-                className="flex flex-col md:flex-row gap-3 relative"
+                className="flex flex-col md:flex-row gap-2 relative"
               >
                 <div className="flex-1 relative group">
                   <input
@@ -179,7 +179,7 @@ export const HomePage: React.FC = () => {
                     }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder="Enter an address, neighborhood, city, or ZIP code"
-                    className="w-full h-14 px-5 rounded-md border border-gray-200 bg-white text-lg text-slate-900 placeholder:text-gray-400 focus:border-zillow-600 focus:ring-2 focus:ring-zillow-100 outline-none transition-all"
+                    className="w-full h-11 md:h-12 px-5 rounded-md border border-gray-200 bg-white text-base text-slate-900 placeholder:text-gray-400 focus:border-zillow-600 focus:ring-2 focus:ring-zillow-100 outline-none transition-all"
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
@@ -201,17 +201,16 @@ export const HomePage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="absolute right-4 top-4 text-gray-400 md:hidden">
-                    <Search size={24} />
+                  <div className="absolute right-4 top-3 text-gray-400 md:hidden">
+                    <Search size={20} />
                   </div>
                 </div>
                 <Button
                   type="submit"
                   variant="primary"
-                  className="h-14 w-full md:w-auto px-10 rounded-md text-lg shadow-lg hover:shadow-zillow-600/30"
+                  className="h-11 md:h-12 w-full md:w-auto px-10 rounded-md text-base shadow-lg hover:shadow-zillow-600/30 font-bold"
                 >
-                  <span className="hidden md:inline">Search</span>
-                  <span className="md:hidden">Search Homes</span>
+                  Search
                 </Button>
               </form>
             </div>
