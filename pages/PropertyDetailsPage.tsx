@@ -268,10 +268,33 @@ export const PropertyDetailsPage: React.FC = () => {
 
 
     const handleMapClick = () => {
-        if (property.latitude && property.longitude) {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`, '_blank');
+        // Log coordinates for debugging
+        console.log('Mapping Property:', { title: property.title, lat: property.latitude, lon: property.longitude });
+
+        const rawLat = property.latitude;
+        const rawLon = property.longitude;
+
+        const lat = Number(rawLat);
+        const lon = Number(rawLon);
+
+        // A location is considered "pinned" if it has valid coordinates that are not exactly 0,0 
+        // (since 0,0 is the database default for unpinned listings).
+        const hasCoords = rawLat !== undefined &&
+            rawLon !== undefined &&
+            rawLat !== null &&
+            rawLon !== null &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            (lat !== 0 || lon !== 0);
+
+        if (hasCoords) {
+            // Use search with coordinates to show a pinned location
+            window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`, '_blank');
         } else {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address + ' ' + property.city)}`, '_blank');
+            // Fallback to address search if no precise coordinates are available
+            const addressString = `${property.address}, ${property.city}, ${property.state}, Nigeria`;
+            console.log('Falling back to address search:', addressString);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressString)}`, '_blank');
         }
     };
 

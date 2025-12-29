@@ -26,13 +26,25 @@ class PropertyService {
             extractedSqft = Number(p.sqft);
         }
 
+        // Coordinate extraction (prioritize non-zero from GeoJSON)
+        let lat = p.latitude;
+        let lng = p.longitude;
+        if (p.location?.coordinates && Array.isArray(p.location.coordinates) && p.location.coordinates.length >= 2) {
+            const [lonVal, latVal] = p.location.coordinates;
+            // Only override if they are valid numbers and not precisely 0,0 (unless they were explicitly set as 0,0)
+            if (latVal !== 0 || lonVal !== 0) {
+                lat = latVal;
+                lng = lonVal;
+            }
+        }
+
         return {
             id: p._id,
             title: p.title,
             description: p.description,
-            address: p.address?.street || p.address,
-            city: p.address?.city || p.city,
-            state: p.address?.state || p.state,
+            address: typeof p.address === 'object' ? p.address.street : p.address,
+            city: typeof p.address === 'object' ? p.address.city : (p.city || p.address?.city),
+            state: typeof p.address === 'object' ? p.address.state : (p.state || p.address?.state),
             price: p.price,
             type: p.propertyType ? p.propertyType.charAt(0).toUpperCase() + p.propertyType.slice(1) : 'House',
             listingType: p.listingType ? p.listingType.charAt(0).toUpperCase() + p.listingType.slice(1) : 'Sale',
@@ -44,10 +56,12 @@ class PropertyService {
             videoUrls: p.videoUrls || [],
             agent: {
                 id: agentProfile._id,
+                userId: agentUser._id || agentUser.id, // Ensure we have the user ID too
                 firstName: firstName,
                 lastName: lastName,
                 email: agentUser.email,
                 phone: agentProfile.phone,
+                whatsapp: agentProfile.whatsapp || p.whatsapp, // Some agents might have whatsapp on the profile or user
                 avatar: agentUser.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName),
                 agencyName: agentProfile.businessName,
                 rating: (typeof agentProfile.rating === 'object' ? agentProfile.rating?.average : agentProfile.rating) || 0,
@@ -58,8 +72,8 @@ class PropertyService {
             addedAt: p.createdAt,
             views: p.views || 0,
             likes: p.likes?.length || 0,
-            latitude: p.location?.coordinates?.[1] || p.latitude,
-            longitude: p.location?.coordinates?.[0] || p.longitude,
+            latitude: (lat !== undefined && lat !== null && !isNaN(Number(lat))) ? Number(lat) : undefined,
+            longitude: (lng !== undefined && lng !== null && !isNaN(Number(lng))) ? Number(lng) : undefined,
             priceFrequency: p.priceFrequency,
             plots: p.plots || 0,
             isFeatured: p.isFeatured
@@ -171,11 +185,16 @@ class PropertyService {
             };
         }
 
-        // Map Location
-        if (p.longitude !== undefined && p.latitude !== undefined) {
+        // Map Location (send both top-level and nested to ensure backend sync)
+        if (p.longitude !== undefined && p.latitude !== undefined && p.longitude !== null && p.latitude !== null) {
+            const lon = Number(p.longitude);
+            const lat = Number(p.latitude);
+
+            payload.latitude = lat;
+            payload.longitude = lon;
             payload.location = {
                 type: 'Point',
-                coordinates: [p.longitude || 0, p.latitude || 0]
+                coordinates: [lon, lat]
             };
         }
 

@@ -336,30 +336,48 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             return;
         }
         setIsLocating(true);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setFormData(prev => ({
-                    ...prev,
-                    latitude: position.coords.latitude.toString(),
-                    longitude: position.coords.longitude.toString()
-                }));
-                setIsLocating(false);
-                showToast("High precision location captured!", "success");
-            },
-            (error) => {
-                let msg = "Unable to retrieve your location";
-                if (error.code === 1) msg = "Location permission denied";
-                else if (error.code === 2) msg = "Position unavailable";
-                else if (error.code === 3) msg = "Location request timed out";
-                showToast(msg, 'error');
-                setIsLocating(false);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 0
+        };
+
+        const success = (position: GeolocationPosition) => {
+            setFormData(prev => ({
+                ...prev,
+                latitude: position.coords.latitude.toString(),
+                longitude: position.coords.longitude.toString()
+            }));
+            setIsLocating(false);
+            showToast("Physical location pinned!", "success");
+        };
+
+        const error = (error: GeolocationPositionError) => {
+            console.error('Geolocation Error:', error);
+
+            // If high accuracy fails or times out, try one more time with lower accuracy
+            if (options.enableHighAccuracy) {
+                console.log('High accuracy failed, retrying with standard accuracy...');
+                options.enableHighAccuracy = false;
+                options.timeout = 15000;
+                navigator.geolocation.getCurrentPosition(success, finalError, options);
+                return;
             }
-        );
+            finalError(error);
+        };
+
+        const finalError = (error: GeolocationPositionError) => {
+            let msg = "Unable to retrieve your location";
+            if (error.code === 1) msg = "Location permission denied. Please enable location access in your browser settings.";
+            else if (error.code === 2) msg = "Position unavailable. Are you indoors? Try moving closer to a window.";
+            else if (error.code === 3) msg = "Location request timed out. Trying to get a better signal...";
+
+            showToast(msg, 'error');
+            setIsLocating(false);
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, options);
     };
 
     const validateForm = () => {
@@ -427,15 +445,15 @@ export const AgentProfilePage: React.FC<AgentProfilePageProps> = ({ agentId: pro
             gallery: propertyImages.map(img => img.url),
             videoUrls: videoPreview ? [videoPreview] : [],
             agent: agent!,
-            features: formData.featuresList && formData.featuresList.length > 0
+            features: (formData.featuresList && formData.featuresList.length > 0)
                 ? formData.featuresList
-                : formData.description.split('.').map(s => s.trim()).filter(s => s.length > 5).slice(0, 5),
+                : (formData.description || '').split('.').map(s => s.trim()).filter(s => s.length > 5).slice(0, 5),
             isFeatured: false,
             // Add missing fields for creation
-            latitude: formData.latitude ? Number(formData.latitude) : undefined,
-            longitude: formData.longitude ? Number(formData.longitude) : undefined,
+            latitude: (formData.latitude !== '' && formData.latitude !== null) ? Number(formData.latitude) : undefined,
+            longitude: (formData.longitude !== '' && formData.longitude !== null) ? Number(formData.longitude) : undefined,
             priceFrequency: formData.priceFrequency as any,
-            plots: formData.plots ? Number(formData.plots) : undefined,
+            plots: (formData.plots !== '' && formData.plots !== null) ? Number(formData.plots) : undefined,
             // If we are relisting, force status to Available. Otherwise default to Available for new, or undefined (handled by backend preservation) for edit
             // Actually, for edits, we usually want to preserve status unless explicitly changing it.
             // But if isRelisting is true, we MUST set it to Available.
